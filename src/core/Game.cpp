@@ -159,6 +159,10 @@ void Game::draw()
 
     camera.begin();
     drawWorld();
+    if (pollutionOverlay)
+    {
+        drawPollutionOverlay();
+    }
     drawHighlight();
     drawPathTest();
     drawCommutePath();
@@ -205,6 +209,10 @@ void Game::handleSimulationInput()
     else if (IsKeyPressed(KEY_F4))
     {
         simulationClock.setTimeScale(SimulationClock::EXTREMELY_FAST_SPEED);
+    }
+    else if (IsKeyPressed(KEY_F5))
+    {
+        pollutionOverlay = !pollutionOverlay;
     }
     else if (IsKeyPressed(KEY_F9))
     {
@@ -506,6 +514,27 @@ void Game::drawVehicles()
     }
 }
 
+void Game::drawPollutionOverlay()
+{
+    const int tileSize = world.getTileSize();
+    for (const auto& entry : simulation.getPollution().getPollutionGrid())
+    {
+        const urbania::TileCoordinate& coord = entry.first;
+        const float pollution = entry.second;
+        if (pollution <= 0.001f)
+        {
+            continue;
+        }
+
+        // Alpha scales with pollution level (up to 180 alpha at 100 pollution).
+        const unsigned char alpha = static_cast<unsigned char>(
+            std::clamp(pollution * 1.8f, 10.0f, 180.0f));
+        // Brownish smog overlay tint
+        const Color smogColor = { 110, 75, 45, alpha };
+        DrawRectangle(coord.x * tileSize, coord.y * tileSize, tileSize, tileSize, smogColor);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -515,12 +544,20 @@ void Game::drawDebugText()
     if (hovered.valid)
     {
         DrawText(TextFormat("Tile: (%d, %d)", hovered.x, hovered.y), 10, y, 20, DARKGRAY);
+        y += step;
+        if (pollutionOverlay)
+        {
+            DrawText(TextFormat("Tile Pollution: %.1f",
+                                simulation.getPollution().getPollution(hovered.x, hovered.y)),
+                     10, y, 20, DARKGRAY);
+            y += step;
+        }
     }
     else
     {
         DrawText("Tile: Outside world", 10, y, 20, DARKGRAY);
+        y += step;
     }
-    y += step;
 
     if (demolishMode)
     {
@@ -584,6 +621,18 @@ void Game::drawDebugText()
     DrawText(TextFormat("  Industrial: %+d", simulation.getDemand().getIndustrialDemand()), 10,
              y, 20, DARKGRAY);
     y += step;
+
+    if (pollutionOverlay)
+    {
+        DrawText("Pollution", 10, y, 20, DARKGRAY);
+        y += step;
+        DrawText(TextFormat("  Average: %.1f", simulation.getPollution().getAveragePollution()),
+                 10, y, 20, DARKGRAY);
+        y += step;
+        DrawText(TextFormat("  Maximum: %.1f", simulation.getPollution().getMaxPollution()),
+                 10, y, 20, DARKGRAY);
+        y += step;
+    }
 
     DrawText(TextFormat("Day %d - %02d:%02d", simulationClock.getDay(), simulationClock.getHour(),
                         simulationClock.getMinute()),
@@ -710,12 +759,12 @@ void Game::drawDebugText()
                             simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
                  10, y, 20, DARKGRAY);
         y += step;
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5 pollution, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5 pollution, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
 }

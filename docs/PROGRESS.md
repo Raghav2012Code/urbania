@@ -210,6 +210,17 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - HUD integration with an overview demand block plus real-time demand preview
   on selected construction types.
 
+## Phase 21 — Pollution simulation
+
+- `Pollution` (owned by `Simulation`): tracks per-tile pollution in range
+  [0.0, 100.0] stored in a coordinate-keyed map (`TileCoordinate` -> float).
+- Industrial tiles generate pollution (+10.0/hr); natural decay clears clean
+  zones (-1.0/hr); 4-cardinal diffusion spreads pollution outward; Parks reduce
+  pollution locally in their tile and 4-cardinal neighbors (-4.0/hr).
+- Hourly simulation-time step (every 3,600 sim-seconds); pause halts updates.
+- F5 toggles semi-transparent smog overlay; HUD displays average, maximum, and
+  hovered tile pollution values.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build

@@ -5,6 +5,7 @@
 #include "simulation/Demand.h"
 #include "simulation/Economy.h"
 #include "simulation/Pathfinder.h"
+#include "simulation/Pollution.h"
 #include "simulation/Simulation.h"
 #include "world/Tile.h"
 #include "world/World.h"
@@ -237,6 +238,15 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
                               iDem >= Demand::MIN_DEMAND && iDem <= Demand::MAX_DEMAND;
     check(demandBounds && Demand::MIN_DEMAND == -100 && Demand::MAX_DEMAND == 100,
           "T13 demand in range [-100, 100]");
+
+    const float avgP = simulation.getPollution().getAveragePollution();
+    const float maxP = simulation.getPollution().getMaxPollution();
+    const bool pollBounds = avgP >= Pollution::MIN_POLLUTION && avgP <= Pollution::MAX_POLLUTION &&
+                            maxP >= Pollution::MIN_POLLUTION && maxP <= Pollution::MAX_POLLUTION;
+    check(pollBounds && Pollution::INDUSTRIAL_POLLUTION_PER_HOUR == 10.0f &&
+              Pollution::PARK_POLLUTION_REDUCTION_PER_HOUR == 4.0f &&
+              Pollution::NATURAL_POLLUTION_DECAY_PER_HOUR == 1.0f,
+          "T14 pollution bounds & rates");
 }
 
 bool SelfTest::hasRun() const

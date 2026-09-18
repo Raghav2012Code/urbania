@@ -146,9 +146,10 @@ Done:
 - Vehicle traffic and road congestion slowdowns
 - Basic economy, daily citizen/job taxes, and tile maintenance
 - City demand indicators (Residential, Commercial, Industrial)
+- Pollution simulation (Industrial emissions, 4-cardinal diffusion, park filtering, and decay)
 
 Not yet implemented:
 
 - Public transport (buses, trains, stations)
-- Pollution and dynamic citizen happiness
+- Dynamic citizen happiness
 - Final UI, art textures, audio, and save/load persistence

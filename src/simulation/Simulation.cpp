@@ -17,6 +17,7 @@ bool Simulation::initialize(World& world)
     economy = Economy();
     demand = Demand();
     demand.recalculate(world, population, employment);
+    pollution = urbania::Pollution();
     return true;
 }
 
@@ -40,8 +41,8 @@ void Simulation::update(float simulationDeltaTime)
     congestion.update(traffic);
     economy.update(*world, population, employment, simulationDeltaTime);
     demand.update(*world, population, employment, simulationDeltaTime);
+    pollution.update(*world, simulationDeltaTime);
     // Future city systems run here on simulation time:
-    // pollution.update(simulationDeltaTime);
     // happiness.update(simulationDeltaTime);
 }
 
@@ -109,4 +110,15 @@ Demand& Simulation::getDemand()
 {
     return demand;
 }
+
+const urbania::Pollution& Simulation::getPollution() const
+{
+    return pollution;
+}
+
+urbania::Pollution& Simulation::getPollution()
+{
+    return pollution;
+}
+
 

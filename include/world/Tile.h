@@ -21,6 +21,24 @@ struct TileCoordinate {
     int x = -1;
     int y = -1;
     bool valid = false;
+
+    bool operator<(const TileCoordinate& other) const
+    {
+        if (x != other.x)
+        {
+            return x < other.x;
+        }
+        if (y != other.y)
+        {
+            return y < other.y;
+        }
+        return valid < other.valid;
+    }
+
+    bool operator==(const TileCoordinate& other) const
+    {
+        return x == other.x && y == other.y && valid == other.valid;
+    }
 };
 
 }  // namespace urbania

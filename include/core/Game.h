@@ -28,6 +28,7 @@ private:
     void drawCommutePath();
     void drawCitizens();
     void drawVehicles();
+    void drawPollutionOverlay();
     void drawDebugText();
     void drawSelfTest();
 
@@ -40,6 +41,7 @@ private:
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;
+    bool pollutionOverlay = false;
 
     // Temporary A* debug test: path between the first and last road
     // tiles, recomputed only when the world changes.
