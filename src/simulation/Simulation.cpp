@@ -57,6 +57,7 @@ void Simulation::update(float simulationDeltaTime)
     landValue.update(*world, pollution, congestion, simulationDeltaTime);
     housing.update(*world, population, landValue, simulationDeltaTime);
     transit.syncWithWorld(*world);
+    transit.update(simulationDeltaTime, roadNetwork);
 
     if (population.getTotalPopulation() != popBefore ||
         employment.getEmployedCitizens() != empBefore)
@@ -103,6 +104,11 @@ const Population& Simulation::getPopulation() const
 const urbania::Employment& Simulation::getEmployment() const
 {
     return employment;
+}
+
+const urbania::RoadNetwork& Simulation::getRoadNetwork() const
+{
+    return roadNetwork;
 }
 
 urbania::RoadNetwork& Simulation::getRoadNetwork()

@@ -39,9 +39,14 @@ add_executable(Urbania
     src/simulation/Happiness.cpp
     src/simulation/LandValue.cpp
     src/simulation/Housing.cpp
+    src/simulation/Bus.cpp
     src/simulation/BusStop.cpp
     src/simulation/BusRoute.cpp
     src/simulation/Transit.cpp
+    src/rendering/TextureManager.cpp
+    src/rendering/TileRenderer.cpp
+    src/rendering/EntityRenderer.cpp
+    src/ui/UI.cpp
 )
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)

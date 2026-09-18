@@ -1,13 +1,18 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "core/Camera.h"
 #include "core/Input.h"
 #include "core/SelfTest.h"
+#include "rendering/EntityRenderer.h"
+#include "rendering/TextureManager.h"
+#include "rendering/TileRenderer.h"
 #include "simulation/Economy.h"
 #include "simulation/Simulation.h"
 #include "simulation/SimulationClock.h"
+#include "ui/UI.h"
 #include "world/Tile.h"
 #include "world/World.h"
 
@@ -22,24 +27,13 @@ private:
     void handleBuildInput();
     void handleSimulationInput();
     void recomputePathTest();
-    void drawWorld();
     void drawHighlight();
     void drawPathTest();
     void drawCommutePath();
-    void drawCitizens();
-    void drawVehicles();
     void drawPollutionOverlay();
     void drawLandValueOverlay();
     void drawHousingOverlay();
-    void drawBusStops();
     void drawBusRoutes();
-    void drawTopRibbon();
-    void drawDemandMeters();
-    void drawBottomDock();
-    void drawDashboardPanel();
-    void drawRouteBanner();
-    void drawToastMessage();
-    void drawSelfTestModal();
 
     World world;
     urbania::Camera camera;
@@ -47,6 +41,11 @@ private:
     SimulationClock simulationClock;
     Simulation simulation;
     urbania::SelfTest selfTest;
+
+    urbania::TextureManager textureManager;
+    urbania::TileRenderer tileRenderer;
+    urbania::EntityRenderer entityRenderer;
+    urbania::UI ui;
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;

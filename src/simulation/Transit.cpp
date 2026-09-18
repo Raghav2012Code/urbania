@@ -241,6 +241,7 @@ bool Transit::createRoute(const RoadNetwork& roadNetwork, const std::vector<int>
     }
 
     routes.push_back({ nextRouteId++, stopIds });
+    syncBusesWithRoutes();
     return true;
 }
 
@@ -251,6 +252,7 @@ bool Transit::deleteRoute(int routeId)
         if (it->id == routeId)
         {
             routes.erase(it);
+            syncBusesWithRoutes();
             return true;
         }
     }
@@ -264,6 +266,7 @@ bool Transit::deleteLatestRoute()
         return false;
     }
     routes.pop_back();
+    syncBusesWithRoutes();
     return true;
 }
 
@@ -292,6 +295,50 @@ int Transit::getRouteCount() const
 int Transit::getNextRouteId() const
 {
     return nextRouteId;
+}
+
+void Transit::update(float deltaTime, const RoadNetwork& roadNetwork)
+{
+    syncBusesWithRoutes();
+    for (auto& bus : buses)
+    {
+        bus.update(deltaTime, *this, roadNetwork);
+    }
+}
+
+const std::vector<Bus>& Transit::getBuses() const
+{
+    return buses;
+}
+
+const Bus* Transit::getBus(int busId) const
+{
+    for (const auto& bus : buses)
+    {
+        if (bus.id == busId)
+        {
+            return &bus;
+        }
+    }
+    return nullptr;
+}
+
+int Transit::getBusCount() const
+{
+    return static_cast<int>(buses.size());
+}
+
+int Transit::getActiveBusCount() const
+{
+    int count = 0;
+    for (const auto& bus : buses)
+    {
+        if (bus.active)
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 void Transit::syncWithWorld(const World& world)
@@ -334,14 +381,55 @@ void Transit::cleanupRoutes()
                                     return r.stopIds.size() < MIN_ROUTE_STOPS;
                                 }),
                  routes.end());
+
+    syncBusesWithRoutes();
+}
+
+void Transit::syncBusesWithRoutes()
+{
+    // Remove buses whose route no longer exists
+    buses.erase(std::remove_if(buses.begin(), buses.end(),
+                               [this](const Bus& bus) {
+                                   return getRoute(bus.routeId) == nullptr;
+                               }),
+                buses.end());
+
+    // Ensure each valid route has exactly one bus
+    for (const auto& route : routes)
+    {
+        bool found = false;
+        for (const auto& bus : buses)
+        {
+            if (bus.routeId == route.id)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            Bus newBus;
+            newBus.id = nextBusId++;
+            newBus.routeId = route.id;
+            newBus.currentStopIndex = 0;
+            newBus.pathIndex = 0;
+            newBus.movementProgress = 0.0f;
+            newBus.speed = Bus::DEFAULT_SPEED;
+            newBus.active = false;
+            buses.push_back(newBus);
+        }
+    }
 }
 
 void Transit::clear()
 {
     busStops.clear();
     routes.clear();
+    buses.clear();
     nextStopId = 1;
     nextRouteId = 1;
+    nextBusId = 1;
 }
 
 }  // namespace urbania

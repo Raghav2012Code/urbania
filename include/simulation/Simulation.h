@@ -33,6 +33,7 @@ public:
     float getElapsedSimulationSeconds() const;
     const Population& getPopulation() const;
     const urbania::Employment& getEmployment() const;
+    const urbania::RoadNetwork& getRoadNetwork() const;
     urbania::RoadNetwork& getRoadNetwork();
     const urbania::CommuteSystem& getCommuteSystem() const;
     const urbania::CitizenMovement& getCitizenMovement() const;

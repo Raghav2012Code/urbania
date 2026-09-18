@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "simulation/Bus.h"
 #include "simulation/BusRoute.h"
 #include "simulation/BusStop.h"
 #include "world/Tile.h"
@@ -14,7 +15,7 @@ namespace urbania {
 class RoadNetwork;
 
 // Foundation for Urbania's public transit system.
-// Manages bus stops and bus routes.
+// Manages bus stops, bus routes, and buses.
 //
 // Bus Stop placement rules:
 // - Only on valid Road tiles.
@@ -27,6 +28,11 @@ class RoadNetwork;
 // - Ordered sequence of at least 2 bus stop IDs.
 // - Road network connectivity required between consecutive stops.
 // - Deterministic 1-based IDs.
+//
+// Bus vehicle rules:
+// - Exactly 1 bus spawned per valid route.
+// - Deleted routes or broken routes safely despawn their bus.
+// - Moves smoothly along A* road path from stop to stop in sequence and loops.
 //
 // Independent from raylib rendering.
 class Transit {
@@ -71,16 +77,26 @@ public:
     int getRouteCount() const;
     int getNextRouteId() const;
 
+    // Bus vehicle management
+    void update(float deltaTime, const RoadNetwork& roadNetwork);
+    const std::vector<Bus>& getBuses() const;
+    const Bus* getBus(int busId) const;
+    int getBusCount() const;
+    int getActiveBusCount() const;
+
     void syncWithWorld(const World& world);
     void clear();
 
 private:
     void cleanupRoutes();
+    void syncBusesWithRoutes();
 
     std::vector<BusStop> busStops;
     std::vector<BusRoute> routes;
+    std::vector<Bus> buses;
     int nextStopId = 1;
     int nextRouteId = 1;
+    int nextBusId = 1;
 };
 
 }  // namespace urbania
