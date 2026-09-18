@@ -20,6 +20,15 @@ bool Game::initialize()
     InitWindow(screenWidth, screenHeight, "Urbania");
     SetTargetFPS(60);
 
+    // Guarantee the window opens visibly: center it on the primary
+    // monitor, restore it in case the OS parked it minimized, and
+    // request focus. Without this, on some systems the window spawns
+    // off-screen and only shows as a taskbar icon.
+    SetWindowPosition((GetMonitorWidth(0) - screenWidth) / 2,
+                      (GetMonitorHeight(0) - screenHeight) / 2);
+    RestoreWindow();
+    SetWindowFocused();
+
     return IsWindowReady();
 }
 
