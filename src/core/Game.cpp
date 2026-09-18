@@ -155,6 +155,7 @@ void Game::draw()
     camera.end();
 
     drawDebugText();
+    drawSelfTest();
 }
 
 void Game::shutdown()
@@ -192,6 +193,14 @@ void Game::handleSimulationInput()
     else if (IsKeyPressed(KEY_F4))
     {
         simulationClock.setTimeScale(SimulationClock::EXTREMELY_FAST_SPEED);
+    }
+    else if (IsKeyPressed(KEY_F9))
+    {
+        // Development self-test: scripted checks against the live
+        // systems. Uses direct calls and fixed deltas, never the OS
+        // mouse, so results are cursor-independent.
+        selfTest.run(world, economy, simulation);
+        pathTestDirty = true;
     }
 }
 
@@ -594,10 +603,41 @@ void Game::drawDebugText()
                                                  .getNeighbors(hovered)
                                                  .size())),
                  10, 556, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 582, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 582,
+                 20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 556, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 556,
+                 20, DARKGRAY);
+    }
+}
+
+void Game::drawSelfTest()
+{
+    if (!selfTest.hasRun())
+    {
+        return;
+    }
+
+    const int total = selfTest.getTotal();
+    const int passed = selfTest.getPassed();
+    const bool failed = total > passed;
+    const Color summaryColor = failed ? Color{ 200, 40, 40, 255 } : DARKGRAY;
+
+    DrawText(TextFormat("SelfTest: %d/%d", passed, total), 10, 640, 20, summaryColor);
+
+    int y = 666;
+    int shown = 0;
+    for (const std::string& line : selfTest.getResults())
+    {
+        if (shown >= 11)
+        {
+            break;
+        }
+        const bool failed = line.rfind("FAIL", 0) == 0;
+        DrawText(line.c_str(), 10, y, 20, failed ? Color{ 200, 40, 40, 255 } : DARKGRAY);
+        y += 26;
+        ++shown;
     }
 }

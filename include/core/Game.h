@@ -4,6 +4,7 @@
 
 #include "core/Camera.h"
 #include "core/Input.h"
+#include "core/SelfTest.h"
 #include "simulation/Economy.h"
 #include "simulation/Simulation.h"
 #include "simulation/SimulationClock.h"
@@ -28,6 +29,7 @@ private:
     void drawCitizens();
     void drawVehicles();
     void drawDebugText();
+    void drawSelfTest();
 
     World world;
     urbania::Camera camera;
@@ -35,6 +37,7 @@ private:
     Economy economy;
     SimulationClock simulationClock;
     Simulation simulation;
+    urbania::SelfTest selfTest;
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;

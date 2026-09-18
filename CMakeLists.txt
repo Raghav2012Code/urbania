@@ -15,6 +15,7 @@ find_package(raylib REQUIRED)
 add_executable(Urbania
     src/main.cpp
     src/core/Game.cpp
+    src/core/SelfTest.cpp
     src/core/Camera.cpp
     src/core/Input.cpp
     src/world/Tile.cpp

@@ -68,6 +68,7 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | `D`           | Toggle demolition mode                              |
 | `Space`       | Pause / resume the simulation                       |
 | `F1`–`F4`     | Simulation speed: 1x, 2x, 4x, 8x                    |
+| `F9`          | Run the development self-test (builds test tiles)   |
 
 ## Gameplay systems
 
