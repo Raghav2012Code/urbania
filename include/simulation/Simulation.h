@@ -13,6 +13,7 @@
 #include "simulation/Population.h"
 #include "simulation/RoadNetwork.h"
 #include "simulation/Traffic.h"
+#include "simulation/Transit.h"
 
 class World;
 
@@ -48,6 +49,8 @@ public:
     urbania::LandValue& getLandValue();
     const urbania::Housing& getHousing() const;
     urbania::Housing& getHousing();
+    const urbania::Transit& getTransit() const;
+    urbania::Transit& getTransit();
 
 private:
     World* world = nullptr;
@@ -64,6 +67,7 @@ private:
     urbania::Happiness happiness;
     urbania::LandValue landValue;
     urbania::Housing housing;
+    urbania::Transit transit;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.

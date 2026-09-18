@@ -159,6 +159,7 @@ void Game::draw()
 
     camera.begin();
     drawWorld();
+    drawBusStops();
     if (pollutionOverlay)
     {
         drawPollutionOverlay();
@@ -242,35 +243,52 @@ void Game::handleSimulationInput()
 
 void Game::handleBuildInput()
 {
-    // Build-type selection also leaves demolition mode.
+    // Build-type selection also leaves demolition and bus stop modes.
     if (IsKeyPressed(KEY_ONE))
     {
         selectedBuildType = TileType::Road;
         demolishMode = false;
+        busStopMode = false;
     }
     else if (IsKeyPressed(KEY_TWO))
     {
         selectedBuildType = TileType::Residential;
         demolishMode = false;
+        busStopMode = false;
     }
     else if (IsKeyPressed(KEY_THREE))
     {
         selectedBuildType = TileType::Commercial;
         demolishMode = false;
+        busStopMode = false;
     }
     else if (IsKeyPressed(KEY_FOUR))
     {
         selectedBuildType = TileType::Industrial;
         demolishMode = false;
+        busStopMode = false;
     }
     else if (IsKeyPressed(KEY_FIVE))
     {
         selectedBuildType = TileType::Park;
         demolishMode = false;
+        busStopMode = false;
     }
     else if (IsKeyPressed(KEY_D))
     {
         demolishMode = !demolishMode;
+        if (demolishMode)
+        {
+            busStopMode = false;
+        }
+    }
+    else if (IsKeyPressed(KEY_B))
+    {
+        busStopMode = !busStopMode;
+        if (busStopMode)
+        {
+            demolishMode = false;
+        }
     }
 
     if (!input.leftClicked())
@@ -281,6 +299,20 @@ void Game::handleBuildInput()
     const urbania::TileCoordinate hovered = input.hovered();
     if (!hovered.valid)
     {
+        return;
+    }
+
+    if (busStopMode)
+    {
+        const bool isShift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+        if (isShift)
+        {
+            simulation.getTransit().removeBusStop(hovered);
+        }
+        else
+        {
+            simulation.getTransit().addBusStop(world, hovered, simulation.getEconomy());
+        }
         return;
     }
 
@@ -298,10 +330,11 @@ void Game::handleBuildInput()
     }
 
     // Refresh the road graph only when a tile changes to or from Road.
-    // Any successful edit also refreshes the temporary path test.
+    // Any successful edit also refreshes the temporary path test and syncs transit.
     if (changed && (oldType == TileType::Road || tile.type == TileType::Road))
     {
         simulation.getRoadNetwork().rebuild(world);
+        simulation.getTransit().syncWithWorld(world);
     }
     if (changed)
     {
@@ -368,6 +401,38 @@ void Game::drawHighlight()
         else
         {
             DrawRectangleLinesEx(rect, 2.0f, UNAVAILABLE_BORDER);
+        }
+        return;
+    }
+
+    if (busStopMode)
+    {
+        const bool isShift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+        if (isShift)
+        {
+            if (simulation.getTransit().hasBusStop(hovered))
+            {
+                DrawRectangle(px, py, tileSize, tileSize, DEMOLISH_FILL);
+                DrawRectangleLinesEx(rect, 2.0f, BLOCKED_BORDER);
+            }
+            else
+            {
+                DrawRectangleLinesEx(rect, 2.0f, UNAVAILABLE_BORDER);
+            }
+        }
+        else
+        {
+            if (simulation.getTransit().canPlaceBusStop(world, hovered) &&
+                simulation.getEconomy().canAfford(urbania::Transit::BUS_STOP_COST))
+            {
+                Color preview = { 50, 150, 240, 100 };
+                DrawRectangle(px, py, tileSize, tileSize, preview);
+                DrawRectangleLinesEx(rect, 2.0f, HIGHLIGHT_BORDER);
+            }
+            else
+            {
+                DrawRectangleLinesEx(rect, 2.0f, BLOCKED_BORDER);
+            }
         }
         return;
     }
@@ -611,6 +676,25 @@ void Game::drawHousingOverlay()
     }
 }
 
+void Game::drawBusStops()
+{
+    const int tileSize = world.getTileSize();
+    for (const urbania::BusStop& stop : simulation.getTransit().getBusStops())
+    {
+        if (!stop.tile.valid)
+        {
+            continue;
+        }
+        const int px = stop.tile.x * tileSize;
+        const int py = stop.tile.y * tileSize;
+
+        // Bus stop sign marker on the road tile
+        DrawRectangle(px + 4, py + 4, 12, 12, Color{ 255, 215, 0, 240 });
+        DrawRectangleLines(px + 4, py + 4, 12, 12, Color{ 20, 50, 120, 255 });
+        DrawText("B", px + 7, py + 5, 10, Color{ 20, 50, 120, 255 });
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -637,6 +721,15 @@ void Game::drawDebugText()
                      10, y, 20, DARKGRAY);
             y += step;
         }
+        if (simulation.getTransit().hasBusStop(hovered))
+        {
+            const urbania::BusStop* stop = simulation.getTransit().getBusStop(hovered);
+            if (stop != nullptr)
+            {
+                DrawText(TextFormat("Bus Stop ID: %d", stop->id), 10, y, 20, DARKBLUE);
+                y += step;
+            }
+        }
         if (pollutionOverlay)
         {
             DrawText(TextFormat("Tile Pollution: %.1f",
@@ -654,6 +747,15 @@ void Game::drawDebugText()
     if (demolishMode)
     {
         DrawText("Mode: DEMOLISH (D to exit)", 10, y, 20, { 200, 40, 40, 255 });
+        y += step;
+    }
+    else if (busStopMode)
+    {
+        DrawText("Mode: BUS STOP (B to exit)", 10, y, 20, { 40, 120, 220, 255 });
+        y += step;
+        DrawText(TextFormat("Cost: %s (Shift+Click to remove)",
+                            formatMoney(urbania::Transit::BUS_STOP_COST).c_str()),
+                 10, y, 20, DARKGRAY);
         y += step;
     }
     else
@@ -854,8 +956,11 @@ void Game::drawDebugText()
     DrawText(TextFormat("Active Vehicles: %d", simulation.getTraffic().getActiveVehicleCount()),
              10, y, 20, DARKGRAY);
     y += step;
-    DrawText(TextFormat("Roads: %d", simulation.getRoadNetwork().getNodeCount()), 10, y, 20,
-             DARKGRAY);
+    DrawText(TextFormat("Roads: %d", simulation.getRoadNetwork().getNodeCount()), 10, y,
+             20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("Bus Stops: %d", simulation.getTransit().getBusStopCount()), 10, y,
+             20, DARKGRAY);
     y += step;
     DrawText(TextFormat("Congested Roads: %d", simulation.getCongestion().getCongestedRoadCount()),
              10, y, 20, DARKGRAY);
@@ -882,12 +987,12 @@ void Game::drawDebugText()
                             simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
                  10, y, 20, DARKGRAY);
         y += step;
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, B bus stop, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, B bus stop, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
 }

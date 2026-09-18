@@ -10,6 +10,8 @@
 #include "simulation/Pathfinder.h"
 #include "simulation/Pollution.h"
 #include "simulation/Simulation.h"
+#include "simulation/Traffic.h"
+#include "simulation/Transit.h"
 #include "world/Tile.h"
 #include "world/World.h"
 
@@ -275,6 +277,33 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     check(housingBounds && Housing::CAPACITY_PER_TILE == 10 &&
               Housing::MIN_HOUSING_PRESSURE == -100 && Housing::MAX_HOUSING_PRESSURE == 100,
           "T17 housing capacity & pressure bounds");
+
+    // T18: Transit bus stop validation, placement, cost deduction, and removal
+    {
+        const int roadX = ROAD_X0;
+        const int roadY = ROAD_Y;
+        const int grassX = ROAD_X0;
+        const int grassY = ROAD_Y - 2;
+
+        bool transitOk = (Transit::BUS_STOP_COST == 500);
+        transitOk = transitOk && !simulation.getTransit().canPlaceBusStop(world, grassX, grassY);
+        transitOk = transitOk && simulation.getTransit().canPlaceBusStop(world, roadX, roadY);
+
+        const int moneyBefore = economy.getMoney();
+        const bool added = simulation.getTransit().addBusStop(world, roadX, roadY, economy);
+        transitOk = transitOk && added;
+        transitOk = transitOk && (economy.getMoney() == moneyBefore - Transit::BUS_STOP_COST);
+        transitOk = transitOk && simulation.getTransit().hasBusStop(roadX, roadY);
+        transitOk = transitOk && (simulation.getTransit().getBusStop(roadX, roadY)->id >= 1);
+        transitOk = transitOk && !simulation.getTransit().canPlaceBusStop(world, roadX, roadY); // no duplicates
+
+        const bool removed = simulation.getTransit().removeBusStop(roadX, roadY);
+        transitOk = transitOk && removed;
+        transitOk = transitOk && !simulation.getTransit().hasBusStop(roadX, roadY);
+        transitOk = transitOk && (world.getTile(roadX, roadY).type == TileType::Road); // road untouched
+
+        check(transitOk, "T18 transit bus stop placement & removal");
+    }
 }
 
 bool SelfTest::hasRun() const

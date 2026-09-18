@@ -65,6 +65,7 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | Mouse move    | Hover/select a tile (works while panning/zooming)   |
 | Left click    | Build on / demolish the hovered tile                |
 | `1`–`5`       | Select build type: Road, Residential, Commercial, Industrial, Park |
+| `B`           | Toggle bus stop placement mode (Shift+Click to remove) |
 | `D`           | Toggle demolition mode                              |
 | `Space`       | Pause / resume the simulation                       |
 | `F1`–`F4`     | Simulation speed: 1x, 2x, 4x, 8x                    |
@@ -153,8 +154,10 @@ Done:
 - Citizen happiness system (Employment, Housing, Parks, Commutes, and Pollution)
 - Land value simulation (Tile desirability based on parks, pollution, and congestion)
 - Housing and residential value (Housing capacity, occupancy ratio, pressure, and residential value)
+- Public transit foundation (Bus stops, placement rules, removal, road sync, and visual rendering)
 
 Not yet implemented:
 
-- Public transport (buses, trains, stations)
+- Bus vehicles, transit routes, and public transit passenger simulation
+- Trains, stations, and rail networks
 - Final UI, art textures, audio, and save/load persistence

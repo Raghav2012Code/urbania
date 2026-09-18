@@ -259,6 +259,18 @@ push → confirm the remote matches. No phase starts with a dirty tree.
   HUD displays detailed housing capacity, residents, occupancy percentage, housing pressure,
   and hovered residential tile resident counts and residential value.
 
+## Phase 25 — Transit bus stop foundation
+
+- `BusStop` & `Transit` (owned by `Simulation`): foundational public transit data structures
+  and management system for bus stops with deterministic 1-based IDs.
+- Placement rules: Road tiles only, at most one stop per road tile, costing ₹500
+  (via `Economy`). Removal via Shift+Left Click is free and leaves the road intact.
+- Road demolition automatically syncs and removes orphaned bus stops.
+- Interactive mode: `B` key toggles Bus Stop placement mode with contextual previews
+  (blue/cyan valid preview, red invalid/blocked outline).
+- Visual rendering: Raylib-based bus stop marker with yellow background and navy sign glyph on road tiles.
+- HUD displays total bus stops count (`Bus Stops: X`) and hovered bus stop ID (`Bus Stop ID: X`).
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
@@ -268,5 +280,6 @@ live in-game checks driven through the actual window (build, demolish,
 pause, speeds, screenshots with pixel checks), a scoped-diff review,
 and a commit + push with remote-HEAD confirmation. Simulation code
 stays raylib-free throughout, proven by grep on every phase.
+
 
 

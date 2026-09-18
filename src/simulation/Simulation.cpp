@@ -24,6 +24,8 @@ bool Simulation::initialize(World& world)
     landValue.recalculate(world, pollution, congestion);
     housing = urbania::Housing();
     housing.recalculate(world, population, landValue);
+    transit = urbania::Transit();
+    transit.syncWithWorld(world);
     return true;
 }
 
@@ -51,6 +53,7 @@ void Simulation::update(float simulationDeltaTime)
     happiness.update(*world, population.getCitizenManager(), pollution, simulationDeltaTime);
     landValue.update(*world, pollution, congestion, simulationDeltaTime);
     housing.update(*world, population, landValue, simulationDeltaTime);
+    transit.syncWithWorld(*world);
 }
 
 void Simulation::shutdown()
@@ -156,6 +159,16 @@ const urbania::Housing& Simulation::getHousing() const
 urbania::Housing& Simulation::getHousing()
 {
     return housing;
+}
+
+const urbania::Transit& Simulation::getTransit() const
+{
+    return transit;
+}
+
+urbania::Transit& Simulation::getTransit()
+{
+    return transit;
 }
 
 

@@ -31,6 +31,7 @@ private:
     void drawPollutionOverlay();
     void drawLandValueOverlay();
     void drawHousingOverlay();
+    void drawBusStops();
     void drawDebugText();
     void drawSelfTest();
 
@@ -43,6 +44,7 @@ private:
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;
+    bool busStopMode = false;
     bool pollutionOverlay = false;
     bool landValueOverlay = false;
     bool housingOverlay = false;
