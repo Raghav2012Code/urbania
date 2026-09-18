@@ -1,6 +1,7 @@
 #include "core/SelfTest.h"
 
 #include "simulation/CitizenManager.h"
+#include "simulation/Congestion.h"
 #include "simulation/Economy.h"
 #include "simulation/Pathfinder.h"
 #include "simulation/Simulation.h"
@@ -92,6 +93,47 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     // T4: one sim hour grows exactly one resident on the fresh tile.
     simulation.update(SIM_HOUR);
     check(simulation.getPopulation().getResidentsAt(HOME_X, HOME_Y) == 1, "T4 growth 0->1");
+
+    // T11: congestion on the newcomer's start tile plus the slowdown
+    // formula. A zero-delta update spawns a fresh trip frozen at its
+    // start tile, so usage is exact regardless of the live city.
+    {
+        const Citizen* rookie = nullptr;
+        for (const Citizen& citizen : simulation.getPopulation().getCitizens().getCitizens())
+        {
+            if (citizen.home.valid && citizen.home.x == HOME_X && citizen.home.y == HOME_Y &&
+                citizen.employed && !citizen.commutePath.empty())
+            {
+                rookie = &citizen;
+                break;
+            }
+        }
+        if (rookie == nullptr)
+        {
+            skip("T11 congestion platoon (not routed yet)");
+        }
+        else
+        {
+            simulation.update(0.0f);
+            check(simulation.getCongestion().getVehicleCount(HOME_X, ROAD_Y) >= 1,
+                  "T11 start tile usage >= 1");
+            check(simulation.getCongestion().getCongestion(HOME_X, ROAD_Y) >= 0.2f,
+                  "T11 congestion >= 0.2");
+            check(simulation.getCongestion().getMaxCongestion() >= 0.2f, "T11 max >= 0.2");
+            check(urbania::Congestion::getCapacity() == 5, "T11 capacity 5");
+            const bool formula =
+                urbania::Congestion::speedMultiplier(0.0f) == 1.0f &&
+                urbania::Congestion::speedMultiplier(0.6f) > 0.75f &&
+                urbania::Congestion::speedMultiplier(0.6f) < 0.77f &&
+                urbania::Congestion::speedMultiplier(1.0f) > 0.59f &&
+                urbania::Congestion::speedMultiplier(1.0f) < 0.61f &&
+                urbania::Congestion::speedMultiplier(2.0f) > 0.29f &&
+                urbania::Congestion::speedMultiplier(2.0f) < 0.31f &&
+                urbania::Congestion::speedMultiplier(10.0f) > 0.05f &&
+                urbania::Congestion::speedMultiplier(10.0f) < 0.07f;
+            check(formula, "T11 slowdown formula exact");
+        }
+    }
 
     // T5: newcomer employed with a valid commute route (bounded wait so
     // a saturated city reports SKIP instead of hanging the test).

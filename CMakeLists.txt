@@ -33,6 +33,7 @@ add_executable(Urbania
     src/simulation/CitizenMovement.cpp
     src/simulation/Vehicle.cpp
     src/simulation/Traffic.cpp
+    src/simulation/Congestion.cpp
 )
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)

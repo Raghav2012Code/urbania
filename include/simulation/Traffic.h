@@ -8,6 +8,7 @@
 namespace urbania {
 
 class CitizenManager;
+class Congestion;
 class RoadNetwork;
 
 // Owns all Vehicles: one road trip per employed citizen with a valid
@@ -24,7 +25,7 @@ public:
     static constexpr float VEHICLE_SPEED_TILES_PER_SECOND = 4.0f;
 
     void update(const RoadNetwork& roadNetwork, CitizenManager& citizens,
-                float simulationDeltaTime);
+                float simulationDeltaTime, const Congestion& congestion);
 
     int getVehicleCount() const;
     int getActiveVehicleCount() const;
@@ -35,7 +36,7 @@ private:
     void sweepInactive();
     void spawnFromCommuters(CitizenManager& citizens);
     void moveVehicles(const RoadNetwork& roadNetwork, CitizenManager& citizens,
-                      float simulationDeltaTime);
+                      float simulationDeltaTime, const Congestion& congestion);
 
     std::vector<Vehicle> vehicles;
     std::map<int, int> citizenToVehicle;

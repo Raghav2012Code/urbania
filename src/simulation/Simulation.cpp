@@ -13,6 +13,7 @@ bool Simulation::initialize(World& world)
     commuteSystem = urbania::CommuteSystem();
     citizenMovement = urbania::CitizenMovement();
     traffic = urbania::Traffic();
+    congestion = urbania::Congestion();
     return true;
 }
 
@@ -29,7 +30,11 @@ void Simulation::update(float simulationDeltaTime)
     employment.update(*world, population.getCitizenManager(), simulationDeltaTime);
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     citizenMovement.update(population.getCitizenManager(), simulationDeltaTime);
-    traffic.update(roadNetwork, population.getCitizenManager(), simulationDeltaTime);
+    // Traffic moves on last update's congestion, then congestion is
+    // recalculated from the new positions: one clean pass, no
+    // within-frame feedback loop.
+    traffic.update(roadNetwork, population.getCitizenManager(), simulationDeltaTime, congestion);
+    congestion.update(traffic);
     // Future city systems run here on simulation time:
     // economy.update(simulationDeltaTime);
     // pollution.update(simulationDeltaTime);
@@ -74,4 +79,9 @@ const urbania::CitizenMovement& Simulation::getCitizenMovement() const
 const urbania::Traffic& Simulation::getTraffic() const
 {
     return traffic;
+}
+
+const urbania::Congestion& Simulation::getCongestion() const
+{
+    return congestion;
 }

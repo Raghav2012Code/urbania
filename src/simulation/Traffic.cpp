@@ -1,16 +1,17 @@
 #include "simulation/Traffic.h"
 
 #include "simulation/CitizenManager.h"
+#include "simulation/Congestion.h"
 #include "simulation/RoadNetwork.h"
 
 namespace urbania {
 
 void Traffic::update(const RoadNetwork& roadNetwork, CitizenManager& citizens,
-                     float simulationDeltaTime)
+                     float simulationDeltaTime, const Congestion& congestion)
 {
     sweepInactive();
     spawnFromCommuters(citizens);
-    moveVehicles(roadNetwork, citizens, simulationDeltaTime);
+    moveVehicles(roadNetwork, citizens, simulationDeltaTime, congestion);
 }
 
 int Traffic::getVehicleCount() const
@@ -98,7 +99,7 @@ void Traffic::spawnFromCommuters(CitizenManager& citizens)
 }
 
 void Traffic::moveVehicles(const RoadNetwork& roadNetwork, CitizenManager& citizens,
-                           float simulationDeltaTime)
+                           float simulationDeltaTime, const Congestion& congestion)
 {
     for (Vehicle& vehicle : vehicles)
     {
@@ -132,7 +133,24 @@ void Traffic::moveVehicles(const RoadNetwork& roadNetwork, CitizenManager& citiz
         }
 
         const int legs = static_cast<int>(vehicle.path.size()) - 1;
-        vehicle.movementProgress += simulationDeltaTime * vehicle.speed;
+
+        // Congestion from the previous update slows this step down.
+        // Using last frame's values (rather than recomputing mid-move)
+        // keeps the feedback loop to one clean pass per update.
+        int tileIndex = vehicle.pathIndex;
+        if (tileIndex < 0)
+        {
+            tileIndex = 0;
+        }
+        if (tileIndex > legs)
+        {
+            tileIndex = legs;
+        }
+        const TileCoordinate& current = vehicle.path[tileIndex];
+        const float multiplier =
+            Congestion::speedMultiplier(congestion.getCongestion(current.x, current.y));
+
+        vehicle.movementProgress += simulationDeltaTime * vehicle.speed * multiplier;
         while (vehicle.movementProgress >= 1.0f && vehicle.pathIndex < legs)
         {
             vehicle.movementProgress -= 1.0f;

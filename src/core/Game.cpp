@@ -48,6 +48,18 @@ Color tileColor(TileType type)
     return GRASS_FILL;
 }
 
+// Temporary congestion visual: blend road grey toward red as load
+// passes capacity. Only the display clamps (0 to 2x); the internal
+// congestion value stays unclamped so overload remains measurable.
+Color congestedRoadColor(float congestion)
+{
+    constexpr Color JAM = { 200, 40, 40, 255 };
+    const float t = std::clamp(congestion / 2.0f, 0.0f, 1.0f);
+    return { static_cast<unsigned char>(ROAD_FILL.r + (JAM.r - ROAD_FILL.r) * t),
+             static_cast<unsigned char>(ROAD_FILL.g + (JAM.g - ROAD_FILL.g) * t),
+             static_cast<unsigned char>(ROAD_FILL.b + (JAM.b - ROAD_FILL.b) * t), 255 };
+}
+
 const char* tileTypeName(TileType type)
 {
     switch (type)
@@ -282,7 +294,12 @@ void Game::drawWorld()
         for (int x = 0; x < world.getWidth(); ++x)
         {
             const Tile& tile = world.getTile(x, y);
-            DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, tileColor(tile.type));
+            Color color = tileColor(tile.type);
+            if (tile.type == TileType::Road)
+            {
+                color = congestedRoadColor(simulation.getCongestion().getCongestion(x, y));
+            }
+            DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, color);
         }
     }
 
@@ -594,6 +611,12 @@ void Game::drawDebugText()
              20, DARKGRAY);
     DrawText(TextFormat("Active Vehicles: %d", simulation.getTraffic().getActiveVehicleCount()),
              10, 530, 20, DARKGRAY);
+    DrawText(TextFormat("Roads: %d", simulation.getRoadNetwork().getNodeCount()), 10, 556, 20,
+             DARKGRAY);
+    DrawText(TextFormat("Congested Roads: %d", simulation.getCongestion().getCongestedRoadCount()),
+             10, 582, 20, DARKGRAY);
+    DrawText(TextFormat("Max Congestion: %.1f", simulation.getCongestion().getMaxCongestion()), 10,
+             608, 20, DARKGRAY);
 
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
@@ -602,13 +625,20 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 556, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 582,
+                 10, 634, 20, DARKGRAY);
+        DrawText(TextFormat("Vehicles: %d / Capacity: %d",
+                            simulation.getCongestion().getVehicleCount(hovered.x, hovered.y),
+                            urbania::Congestion::getCapacity()),
+                 10, 660, 20, DARKGRAY);
+        DrawText(TextFormat("Congestion: %.1f",
+                            simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
+                 10, 686, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 712,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 556,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 634,
                  20, DARKGRAY);
     }
 }
@@ -625,9 +655,9 @@ void Game::drawSelfTest()
     const bool failed = total > passed;
     const Color summaryColor = failed ? Color{ 200, 40, 40, 255 } : DARKGRAY;
 
-    DrawText(TextFormat("SelfTest: %d/%d", passed, total), 10, 640, 20, summaryColor);
+    DrawText(TextFormat("SelfTest: %d/%d", passed, total), 10, 740, 20, summaryColor);
 
-    int y = 666;
+    int y = 766;
     int shown = 0;
     for (const std::string& line : selfTest.getResults())
     {

@@ -2,6 +2,7 @@
 
 #include "simulation/CitizenMovement.h"
 #include "simulation/CommuteSystem.h"
+#include "simulation/Congestion.h"
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
 #include "simulation/RoadNetwork.h"
@@ -28,6 +29,7 @@ public:
     const urbania::CommuteSystem& getCommuteSystem() const;
     const urbania::CitizenMovement& getCitizenMovement() const;
     const urbania::Traffic& getTraffic() const;
+    const urbania::Congestion& getCongestion() const;
 
 private:
     World* world = nullptr;
@@ -37,6 +39,7 @@ private:
     urbania::CommuteSystem commuteSystem;
     urbania::CitizenMovement citizenMovement;
     urbania::Traffic traffic;
+    urbania::Congestion congestion;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.
