@@ -27,6 +27,7 @@ class Simulation {
 public:
     bool initialize(World& world);
     void update(float simulationDeltaTime);
+    void onWorldModified();
     void shutdown();
 
     float getElapsedSimulationSeconds() const;

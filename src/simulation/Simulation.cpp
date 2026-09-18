@@ -38,6 +38,9 @@ void Simulation::update(float simulationDeltaTime)
 
     elapsedSimulationSeconds += simulationDeltaTime;
 
+    const int popBefore = population.getTotalPopulation();
+    const int empBefore = employment.getEmployedCitizens();
+
     population.update(*world, simulationDeltaTime);
     employment.update(*world, population.getCitizenManager(), simulationDeltaTime);
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
@@ -54,6 +57,32 @@ void Simulation::update(float simulationDeltaTime)
     landValue.update(*world, pollution, congestion, simulationDeltaTime);
     housing.update(*world, population, landValue, simulationDeltaTime);
     transit.syncWithWorld(*world);
+
+    if (population.getTotalPopulation() != popBefore ||
+        employment.getEmployedCitizens() != empBefore)
+    {
+        demand.recalculate(*world, population, employment);
+        housing.recalculate(*world, population, landValue);
+        happiness.recalculate(*world, population.getCitizenManager(), pollution);
+    }
+}
+
+void Simulation::onWorldModified()
+{
+    if (world == nullptr)
+    {
+        return;
+    }
+
+    roadNetwork.rebuild(*world);
+    population.update(*world, 0.0f);
+    employment.update(*world, population.getCitizenManager(), 0.0f);
+    commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
+    transit.syncWithWorld(*world);
+    demand.recalculate(*world, population, employment);
+    landValue.recalculate(*world, pollution, congestion);
+    housing.recalculate(*world, population, landValue);
+    happiness.recalculate(*world, population.getCitizenManager(), pollution);
 }
 
 void Simulation::shutdown()

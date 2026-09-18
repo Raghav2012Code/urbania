@@ -33,8 +33,13 @@ private:
     void drawHousingOverlay();
     void drawBusStops();
     void drawBusRoutes();
-    void drawDebugText();
-    void drawSelfTest();
+    void drawTopRibbon();
+    void drawDemandMeters();
+    void drawBottomDock();
+    void drawDashboardPanel();
+    void drawRouteBanner();
+    void drawToastMessage();
+    void drawSelfTestModal();
 
     World world;
     urbania::Camera camera;
@@ -50,6 +55,8 @@ private:
     bool pollutionOverlay = false;
     bool landValueOverlay = false;
     bool housingOverlay = false;
+    bool showDashboard = true;
+    bool showSelfTestModal = false;
 
     std::vector<int> currentRouteStops;
     std::string transitMessage;
