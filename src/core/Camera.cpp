@@ -1,5 +1,7 @@
 #include "core/Camera.h"
 
+#include <algorithm>
+
 #include "raylib.h"
 #include "raymath.h"
 #include "world/World.h"
@@ -24,19 +26,6 @@ float worldPixelHeight()
     return static_cast<float>(WORLD_HEIGHT * TILE_SIZE);
 }
 
-float clampFloat(float value, float low, float high)
-{
-    if (value < low)
-    {
-        return low;
-    }
-    if (value > high)
-    {
-        return high;
-    }
-    return value;
-}
-
 }  // namespace
 
 namespace urbania {
@@ -44,7 +33,8 @@ namespace urbania {
 Camera::Camera()
 {
     camera.target = { worldPixelWidth() / 2.0f, worldPixelHeight() / 2.0f };
-    camera.offset = { 1920.0f / 2.0f, 1080.0f / 2.0f };
+    // View anchor left for update(): it re-pins offset to the live
+    // window size every frame before the first draw.
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 }
@@ -89,7 +79,7 @@ void Camera::update(float deltaTime)
         const Vector2 mouse = GetMousePosition();
         const Vector2 before = GetScreenToWorld2D(mouse, camera);
 
-        camera.zoom = clampFloat(camera.zoom + wheel * ZOOM_STEP * camera.zoom, MIN_ZOOM, MAX_ZOOM);
+        camera.zoom = std::clamp(camera.zoom + wheel * ZOOM_STEP * camera.zoom, MIN_ZOOM, MAX_ZOOM);
 
         const Vector2 after = GetScreenToWorld2D(mouse, camera);
         camera.target = Vector2Add(camera.target, Vector2Subtract(before, after));
@@ -136,7 +126,7 @@ void Camera::clampToWorldBounds()
     }
     else
     {
-        camera.target.x = clampFloat(camera.target.x, minX, maxX);
+        camera.target.x = std::clamp(camera.target.x, minX, maxX);
     }
 
     if (minY > maxY)
@@ -145,7 +135,7 @@ void Camera::clampToWorldBounds()
     }
     else
     {
-        camera.target.y = clampFloat(camera.target.y, minY, maxY);
+        camera.target.y = std::clamp(camera.target.y, minY, maxY);
     }
 }
 

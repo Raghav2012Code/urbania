@@ -12,7 +12,21 @@ endif()
 
 find_package(raylib REQUIRED)
 
-add_executable(Urbania src/main.cpp src/core/Game.cpp src/core/Camera.cpp src/core/Input.cpp src/world/Tile.cpp src/world/World.cpp src/simulation/Economy.cpp src/simulation/SimulationClock.cpp src/simulation/Simulation.cpp src/simulation/Population.cpp src/simulation/Citizen.cpp src/simulation/CitizenManager.cpp src/simulation/Employment.cpp)
+add_executable(Urbania
+    src/main.cpp
+    src/core/Game.cpp
+    src/core/Camera.cpp
+    src/core/Input.cpp
+    src/world/Tile.cpp
+    src/world/World.cpp
+    src/simulation/Economy.cpp
+    src/simulation/SimulationClock.cpp
+    src/simulation/Simulation.cpp
+    src/simulation/Population.cpp
+    src/simulation/Citizen.cpp
+    src/simulation/CitizenManager.cpp
+    src/simulation/Employment.cpp
+)
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

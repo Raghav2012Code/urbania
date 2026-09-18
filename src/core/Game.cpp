@@ -14,10 +14,10 @@ constexpr Color COMMERCIAL_FILL = { 255, 170, 30, 255 };
 constexpr Color INDUSTRIAL_FILL = { 190, 70, 70, 255 };
 constexpr Color PARK_FILL = { 35, 140, 60, 255 };
 constexpr Color GRID_LINE = { 0, 0, 0, 30 };
-constexpr Color HIGHLIGHT_FILL = { 255, 255, 255, 80 };
 constexpr Color HIGHLIGHT_BORDER = { 255, 203, 5, 255 };
 constexpr Color PREVIEW_FILL = { 255, 255, 255, 110 };
 constexpr Color BLOCKED_BORDER = { 220, 50, 50, 255 };
+constexpr Color DEMOLISH_FILL = { 220, 50, 50, 110 };
 constexpr Color UNAVAILABLE_BORDER = { 150, 150, 150, 255 };
 
 Color tileColor(TileType type)
@@ -279,7 +279,7 @@ void Game::drawHighlight()
         // Red preview on developed tiles, grey outline on Grass (nothing to demolish).
         if (Economy::isDeveloped(tile))
         {
-            DrawRectangle(px, py, tileSize, tileSize, { 220, 50, 50, 110 });
+            DrawRectangle(px, py, tileSize, tileSize, DEMOLISH_FILL);
             DrawRectangleLinesEx(rect, 2.0f, BLOCKED_BORDER);
         }
         else
