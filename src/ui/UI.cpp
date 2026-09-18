@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
 #include "core/SelfTest.h"
 #include "simulation/Economy.h"
@@ -24,11 +25,95 @@ static std::string formatRupees(int amount)
         s.insert(static_cast<size_t>(n), ",");
         n -= 2;
     }
-    return (amount < 0 ? "-₹" : "₹") + s;
+    return (amount < 0 ? "-Rs. " : "Rs. ") + s;
 }
 
 UI::UI()
 {
+}
+
+void UI::initialize()
+{
+    if (fontsLoaded)
+    {
+        return;
+    }
+
+    // Build codepoints list: Basic ASCII (32..126), Latin-1 Supplement (128..255)
+    // plus essential symbols like bullet (•), em-dash (—), multiply (×)
+    std::vector<int> codepoints;
+    codepoints.reserve(512);
+    for (int c = 32; c <= 255; ++c)
+    {
+        codepoints.push_back(c);
+    }
+    codepoints.push_back(0x2022); // •
+    codepoints.push_back(0x2014); // —
+    codepoints.push_back(0x2192); // →
+    codepoints.push_back(0x00D7); // ×
+    codepoints.push_back(0x00B0); // °
+
+    const char* regPath = "assets/fonts/ui_regular.ttf";
+    const char* boldPath = "assets/fonts/ui_bold.ttf";
+
+    if (FileExists(regPath))
+    {
+        fontRegular = LoadFontEx(regPath, 36, codepoints.data(), static_cast<int>(codepoints.size()));
+        SetTextureFilter(fontRegular.texture, TEXTURE_FILTER_BILINEAR);
+    }
+    if (FileExists(boldPath))
+    {
+        fontBold = LoadFontEx(boldPath, 36, codepoints.data(), static_cast<int>(codepoints.size()));
+        SetTextureFilter(fontBold.texture, TEXTURE_FILTER_BILINEAR);
+    }
+
+    fontsLoaded = (fontRegular.texture.id > 0);
+}
+
+void UI::shutdown()
+{
+    if (fontRegular.texture.id > 0)
+    {
+        UnloadFont(fontRegular);
+        fontRegular = {};
+    }
+    if (fontBold.texture.id > 0)
+    {
+        UnloadFont(fontBold);
+        fontBold = {};
+    }
+    fontsLoaded = false;
+}
+
+void UI::drawText(const char* text, float x, float y, float fontSize, Color color, bool bold) const
+{
+    if (!text || text[0] == '\0') return;
+    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : GetFontDefault());
+    if (f.texture.id > 0 && f.texture.id != GetFontDefault().texture.id)
+    {
+        DrawTextEx(f, text, Vector2{ std::round(x), std::round(y) }, fontSize, 0.5f, color);
+    }
+    else
+    {
+        DrawText(text, static_cast<int>(std::round(x)), static_cast<int>(std::round(y)), static_cast<int>(std::round(fontSize)), color);
+    }
+}
+
+void UI::drawTextCentered(const char* text, float centerX, float centerY, float fontSize, Color color, bool bold) const
+{
+    Vector2 sz = measureText(text, fontSize, bold);
+    drawText(text, centerX - sz.x * 0.5f, centerY - sz.y * 0.5f, fontSize, color, bold);
+}
+
+Vector2 UI::measureText(const char* text, float fontSize, bool bold) const
+{
+    if (!text || text[0] == '\0') return Vector2{ 0.0f, 0.0f };
+    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : GetFontDefault());
+    if (f.texture.id > 0 && f.texture.id != GetFontDefault().texture.id)
+    {
+        return MeasureTextEx(f, text, fontSize, 0.5f);
+    }
+    return Vector2{ static_cast<float>(MeasureText(text, static_cast<int>(fontSize))), fontSize };
 }
 
 bool UI::isMouseOverUI() const
@@ -48,8 +133,8 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
 
     mouseOverUI = false;
 
-    // 1. Top Ribbon bounds (y: 0 to 48)
-    if (m.y >= 0 && m.y <= 48)
+    // 1. Top Ribbon bounds (y: 0 to 52)
+    if (m.y >= 0 && m.y <= 52)
     {
         mouseOverUI = true;
 
@@ -57,7 +142,7 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
         {
             // Speed Controls
             // Pause (330 to 372)
-            if (m.x >= 330 && m.x <= 372 && m.y >= 9 && m.y <= 39)
+            if (m.x >= 320 && m.x <= 362 && m.y >= 9 && m.y <= 41)
             {
                 if (clock.isPaused()) clock.resume();
                 else clock.pause();
@@ -66,29 +151,36 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
             const float speeds[] = { 1.0f, 2.0f, 4.0f, 8.0f };
             for (int i = 0; i < 4; ++i)
             {
-                const int bx = 378 + i * 40;
-                if (m.x >= bx && m.x <= bx + 36 && m.y >= 9 && m.y <= 39)
+                const int bx = 368 + i * 38;
+                if (m.x >= bx && m.x <= bx + 34 && m.y >= 9 && m.y <= 41)
                 {
                     clock.setTimeScale(speeds[i]);
                     if (clock.isPaused()) clock.resume();
                 }
             }
 
-            // Overlay Pills
-            if (m.x >= sw - 440 && m.x <= sw - 374 && m.y >= 9 && m.y <= 39) pollutionOverlay = !pollutionOverlay;
-            if (m.x >= sw - 368 && m.x <= sw - 304 && m.y >= 9 && m.y <= 39) landValueOverlay = !landValueOverlay;
-            if (m.x >= sw - 298 && m.x <= sw - 230 && m.y >= 9 && m.y <= 39) housingOverlay = !housingOverlay;
-            if (m.x >= sw - 224 && m.x <= sw - 146 && m.y >= 9 && m.y <= 39) utilitiesOverlay = !utilitiesOverlay;
-            if (m.x >= sw - 140 && m.x <= sw - 74 && m.y >= 9 && m.y <= 39) showDashboard = !showDashboard;
-            if (m.x >= sw - 68 && m.x <= sw - 12 && m.y >= 9 && m.y <= 39) showSelfTestModal = !showSelfTestModal;
+            // Overlay Pills on top right
+            int rightX = sw - 16;
+            rightX -= 68; // F9 Test
+            if (m.x >= rightX && m.x <= rightX + 68 && m.y >= 10 && m.y <= 40) showSelfTestModal = !showSelfTestModal;
+            rightX -= (78 + 6); // TAB Dash
+            if (m.x >= rightX && m.x <= rightX + 78 && m.y >= 10 && m.y <= 40) showDashboard = !showDashboard;
+            rightX -= (82 + 6); // F8 Utility
+            if (m.x >= rightX && m.x <= rightX + 82 && m.y >= 10 && m.y <= 40) utilitiesOverlay = !utilitiesOverlay;
+            rightX -= (76 + 6); // F7 Housing
+            if (m.x >= rightX && m.x <= rightX + 76 && m.y >= 10 && m.y <= 40) housingOverlay = !housingOverlay;
+            rightX -= (74 + 6); // F6 Land
+            if (m.x >= rightX && m.x <= rightX + 74 && m.y >= 10 && m.y <= 40) landValueOverlay = !landValueOverlay;
+            rightX -= (74 + 6); // F5 Smog
+            if (m.x >= rightX && m.x <= rightX + 74 && m.y >= 10 && m.y <= 40) pollutionOverlay = !pollutionOverlay;
         }
     }
 
     // 2. Bottom Tool Dock bounds
-    const int dockW = 840;
-    const int dockH = 74;
+    const int dockW = 860;
+    const int dockH = 76;
     const int dockX = (sw - dockW) / 2;
-    const int dockY = sh - 84;
+    const int dockY = sh - 88;
 
     if (m.x >= dockX && m.x <= dockX + dockW && m.y >= dockY && m.y <= dockY + dockH)
     {
@@ -96,12 +188,12 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
-            const int btnW = 96;
+            const int btnW = 98;
             const int gap = 6;
             for (int i = 0; i < 8; ++i)
             {
-                const int bx = dockX + 12 + i * (btnW + gap);
-                const int by = dockY + 7;
+                const int bx = dockX + 14 + i * (btnW + gap);
+                const int by = dockY + 8;
                 if (m.x >= bx && m.x <= bx + btnW && m.y >= by && m.y <= by + 60)
                 {
                     switch (i)
@@ -123,17 +215,17 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
     // 3. Right-Side Dashboard bounds
     if (showDashboard)
     {
-        const int dw = 350;
-        const int dh = 480;
+        const int dw = 360;
+        const int dh = 500;
         const int dx = sw - dw - 16;
-        const int dy = 58;
+        const int dy = 60;
 
         if (m.x >= dx && m.x <= dx + dw && m.y >= dy && m.y <= dy + dh)
         {
             mouseOverUI = true;
 
             // Tab bar clicks
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && m.y >= dy + 32 && m.y <= dy + 58)
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && m.y >= dy + 36 && m.y <= dy + 64)
             {
                 const int tabW = (dw - 24) / 5;
                 for (int t = 0; t < 5; ++t)
@@ -166,6 +258,11 @@ void UI::draw(const World& world, const Simulation& sim,
               const std::string& toastMessage, float toastTimer,
               const SelfTest& selfTest)
 {
+    if (!fontsLoaded)
+    {
+        initialize();
+    }
+
     drawTopRibbon(sim, clock, pollutionOverlay, landValueOverlay, housingOverlay,
                   utilitiesOverlay, showDashboard, showSelfTestModal);
     drawDemandMeters(sim);
@@ -199,180 +296,187 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
                        bool showDashboard, bool showSelfTestModal)
 {
     const int sw = GetScreenWidth();
-    const int barH = 46;
+    const int barH = 50;
 
-    // Dark glass ribbon
+    // Dark glass ribbon bar
     DrawRectangle(0, 0, sw, barH, Color{ 14, 18, 28, 248 });
     DrawRectangle(0, barH - 2, sw, 2, Color{ 38, 48, 70, 255 });
 
-    // Logo & Brand
-    DrawText("URBANIA", 18, 12, 22, Color{ 245, 250, 255, 255 });
-    DrawRectangleRounded(Rectangle{ 124, 15, 46, 18 }, 0.4f, 4, Color{ 35, 65, 115, 255 });
-    DrawText("CITY", 133, 18, 11, Color{ 120, 200, 255, 255 });
+    // Logo & Brand Badge
+    drawText("URBANIA", 18, 12, 22, Color{ 245, 250, 255, 255 }, true);
+    DrawRectangleRounded(Rectangle{ 128, 16, 42, 18 }, 0.4f, 4, Color{ 35, 65, 115, 255 });
+    drawTextCentered("CITY", 149, 25, 11, Color{ 120, 200, 255, 255 }, true);
 
     // Calendar & Clock Card
-    DrawRectangleRounded(Rectangle{ 180, 8, 140, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
-    DrawRectangleRoundedLines(Rectangle{ 180, 8, 140, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
-    DrawText(TextFormat("Day %d • %02d:%02d", clock.getDay(), clock.getHour(), clock.getMinute()),
-             192, 16, 15, Color{ 210, 225, 245, 255 });
+    DrawRectangleRounded(Rectangle{ 180, 9, 130, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+    DrawRectangleRoundedLines(Rectangle{ 180, 9, 130, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered(TextFormat("Day %d • %02d:%02d", clock.getDay(), clock.getHour(), clock.getMinute()),
+                     245, 25, 14, Color{ 210, 225, 245, 255 }, true);
 
     // Time & Speed Controls
     const bool isPaused = clock.isPaused();
     const float speed = clock.getTimeScale();
 
-    // Pause pill
+    // Pause button
     const Color pauseBg = isPaused ? Color{ 220, 50, 50, 255 } : Color{ 26, 33, 50, 255 };
     const Color pauseText = isPaused ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ 330, 9, 42, 30 }, 0.3f, 4, pauseBg);
-    DrawRectangleRoundedLines(Rectangle{ 330, 9, 42, 30 }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("||", 346, 16, 15, pauseText);
+    DrawRectangleRounded(Rectangle{ 320, 9, 42, 32 }, 0.3f, 4, pauseBg);
+    DrawRectangleRoundedLines(Rectangle{ 320, 9, 42, 32 }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("||", 341, 25, 15, pauseText, true);
 
-    // Speed 1x, 2x, 4x, 8x
+    // Speed buttons: 1x, 2x, 4x, 8x
     const float speeds[] = { 1.0f, 2.0f, 4.0f, 8.0f };
-    const char* speedLabels[] = { "1×", "2×", "4×", "8×" };
+    const char* speedLabels[] = { "1x", "2x", "4x", "8x" };
     for (int i = 0; i < 4; ++i)
     {
-        const int bx = 378 + i * 40;
+        const int bx = 368 + i * 38;
         const bool active = (!isPaused && speed == speeds[i]);
         const Color btnBg = active ? Color{ 0, 185, 245, 255 } : Color{ 26, 33, 50, 255 };
         const Color btnText = active ? Color{ 10, 20, 30, 255 } : Color{ 150, 165, 190, 255 };
-        DrawRectangleRounded(Rectangle{ static_cast<float>(bx), 9, 36, 30 }, 0.3f, 4, btnBg);
-        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(bx), 9, 36, 30 }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-        DrawText(speedLabels[i], bx + 8, 16, 14, btnText);
+        DrawRectangleRounded(Rectangle{ static_cast<float>(bx), 9, 34, 32 }, 0.3f, 4, btnBg);
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(bx), 9, 34, 32 }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+        drawTextCentered(speedLabels[i], bx + 17, 25, 13, btnText, true);
     }
 
     // Money & Daily Cash Flow (Center)
-    const int moneyX = 555;
-    DrawRectangleRounded(Rectangle{ static_cast<float>(moneyX), 8, 185, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(moneyX), 8, 185, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
-    DrawText(formatRupees(sim.getEconomy().getMoney()).c_str(), moneyX + 10, 15, 16, Color{ 46, 204, 113, 255 });
+    const int moneyX = 535;
+    DrawRectangleRounded(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+    drawText(formatRupees(sim.getEconomy().getMoney()).c_str(), moneyX + 10, 16, 15, Color{ 46, 204, 113, 255 }, true);
 
     const int netInc = static_cast<int>(sim.getEconomy().getNetIncome());
     if (netInc >= 0)
     {
-        DrawText(TextFormat("+%s/d", formatRupees(netInc).c_str()), moneyX + 112, 17, 12, Color{ 46, 204, 113, 220 });
+        drawText(TextFormat("+%s/d", formatRupees(netInc).c_str()), moneyX + 110, 17, 12, Color{ 46, 204, 113, 220 });
     }
     else
     {
-        DrawText(TextFormat("-%s/d", formatRupees(-netInc).c_str()), moneyX + 112, 17, 12, Color{ 231, 76, 60, 220 });
+        drawText(TextFormat("-%s/d", formatRupees(-netInc).c_str()), moneyX + 110, 17, 12, Color{ 231, 76, 60, 220 });
     }
 
     // Population & Happiness
-    const int popX = 750;
-    DrawRectangleRounded(Rectangle{ static_cast<float>(popX), 8, 225, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX), 8, 225, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
-    DrawText(TextFormat("Pop: %d", sim.getPopulation().getTotalPopulation()), popX + 12, 15, 15, WHITE);
+    const int popX = 725;
+    DrawRectangleRounded(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+    drawText(TextFormat("Pop: %d", sim.getPopulation().getTotalPopulation()), popX + 10, 16, 14, WHITE, true);
 
     const float happy = sim.getHappiness().getAverageHappiness();
     Color happyCol = Color{ 46, 204, 113, 255 }; // Green
     if (happy < 40.0f) happyCol = Color{ 231, 76, 60, 255 }; // Red
     else if (happy < 65.0f) happyCol = Color{ 241, 196, 15, 255 }; // Yellow
 
-    DrawRectangleRounded(Rectangle{ static_cast<float>(popX + 108), 11, 108, 26 }, 0.3f, 4,
+    DrawRectangleRounded(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4,
                          Color{ happyCol.r, happyCol.g, happyCol.b, 40 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX + 108), 11, 108, 26 }, 0.3f, 4, happyCol);
-    DrawText(TextFormat("%.1f%% Happy", happy), popX + 116, 16, 13, happyCol);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4, happyCol);
+    drawTextCentered(TextFormat("%.1f%% Happy", happy), popX + 152, 25, 12, happyCol, true);
 
-    // Right-side Overlay & Feature Pills
-    const int pillY = 9;
+    // Right-side Overlay & Feature Pills (dynamically laid out from right margin)
+    int rx = sw - 16;
+    const int pillY = 10;
     const int pillH = 30;
 
-    // F5 Smog
-    const Color smogBg = pollutionOverlay ? Color{ 210, 105, 30, 255 } : Color{ 26, 33, 50, 255 };
-    const Color smogText = pollutionOverlay ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 440), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, smogBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 440), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F5 Smog", sw - 433, pillY + 7, 13, smogText);
-
-    // F6 Land Value
-    const Color landBg = landValueOverlay ? Color{ 46, 204, 113, 255 } : Color{ 26, 33, 50, 255 };
-    const Color landText = landValueOverlay ? Color{ 10, 25, 15, 255 } : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 368), static_cast<float>(pillY), 64, static_cast<float>(pillH) }, 0.3f, 4, landBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 368), static_cast<float>(pillY), 64, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F6 Land", sw - 361, pillY + 7, 13, landText);
-
-    // F7 Housing
-    const Color houseBg = housingOverlay ? Color{ 52, 152, 219, 255 } : Color{ 26, 33, 50, 255 };
-    const Color houseText = housingOverlay ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 298), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, houseBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 298), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F7 House", sw - 291, pillY + 7, 13, houseText);
-
-    // F8 Utilities
-    const Color utilBg = utilitiesOverlay ? Color{ 0, 180, 240, 255 } : Color{ 26, 33, 50, 255 };
-    const Color utilText = utilitiesOverlay ? Color{ 10, 20, 30, 255 } : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, utilBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F8 Utility", sw - 217, pillY + 7, 13, utilText);
-
-    // TAB Dashboard
-    const Color dashBg = showDashboard ? Color{ 142, 68, 173, 255 } : Color{ 26, 33, 50, 255 };
-    const Color dashText = showDashboard ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 140), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, dashBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 140), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("TAB Info", sw - 133, pillY + 7, 13, dashText);
-
-    // F9 SelfTest
+    // F9 Test
+    rx -= 68;
     const Color testBg = showSelfTestModal ? Color{ 230, 126, 34, 255 } : Color{ 26, 33, 50, 255 };
     const Color testText = showSelfTestModal ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 68), static_cast<float>(pillY), 56, static_cast<float>(pillH) }, 0.3f, 4, testBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 68), static_cast<float>(pillY), 56, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F9 Test", sw - 62, pillY + 7, 13, testText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, testBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("F9 Test", rx + 34, pillY + 15, 12, testText, true);
+
+    // TAB Dash
+    rx -= (78 + 6);
+    const Color dashBg = showDashboard ? Color{ 142, 68, 173, 255 } : Color{ 26, 33, 50, 255 };
+    const Color dashText = showDashboard ? WHITE : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, dashBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("TAB Dash", rx + 39, pillY + 15, 12, dashText, true);
+
+    // F8 Utility
+    rx -= (82 + 6);
+    const Color utilBg = utilitiesOverlay ? Color{ 0, 180, 240, 255 } : Color{ 26, 33, 50, 255 };
+    const Color utilText = utilitiesOverlay ? Color{ 10, 20, 30, 255 } : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 82, static_cast<float>(pillH) }, 0.3f, 4, utilBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 82, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("F8 Utility", rx + 41, pillY + 15, 12, utilText, true);
+
+    // F7 Housing
+    rx -= (76 + 6);
+    const Color houseBg = housingOverlay ? Color{ 52, 152, 219, 255 } : Color{ 26, 33, 50, 255 };
+    const Color houseText = housingOverlay ? WHITE : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 76, static_cast<float>(pillH) }, 0.3f, 4, houseBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 76, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("F7 House", rx + 38, pillY + 15, 12, houseText, true);
+
+    // F6 Land Value
+    rx -= (74 + 6);
+    const Color landBg = landValueOverlay ? Color{ 46, 204, 113, 255 } : Color{ 26, 33, 50, 255 };
+    const Color landText = landValueOverlay ? Color{ 10, 25, 15, 255 } : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, landBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("F6 Land", rx + 37, pillY + 15, 12, landText, true);
+
+    // F5 Smog
+    rx -= (74 + 6);
+    const Color smogBg = pollutionOverlay ? Color{ 210, 105, 30, 255 } : Color{ 26, 33, 50, 255 };
+    const Color smogText = pollutionOverlay ? WHITE : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, smogBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    drawTextCentered("F5 Smog", rx + 37, pillY + 15, 12, smogText, true);
 }
 
 void UI::drawDemandMeters(const Simulation& sim)
 {
     const int x = 16;
-    const int y = 58;
-    const int w = 150;
-    const int h = 164;
+    const int y = 62;
+    const int w = 154;
+    const int h = 170;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.1f, 4, Color{ 14, 18, 28, 235 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                               0.1f, 4, Color{ 40, 52, 75, 255 });
 
-    DrawText("RCI DEMAND", x + 30, y + 9, 13, Color{ 200, 215, 235, 255 });
-    DrawLine(x + 12, y + 26, x + w - 12, y + 26, Color{ 40, 52, 75, 255 });
+    drawTextCentered("RCI DEMAND", x + w / 2, y + 16, 13, Color{ 200, 215, 235, 255 }, true);
+    DrawLine(x + 12, y + 28, x + w - 12, y + 28, Color{ 40, 52, 75, 255 });
 
-    const int baseY = y + 90;
+    const int baseY = y + 96;
     const int colW = 28;
-    const int maxBarH = 45;
+    const int maxBarH = 46;
 
     DrawLine(x + 16, baseY, x + w - 16, baseY, Color{ 70, 85, 115, 255 });
 
     // Residential (R)
     const int rDem = sim.getDemand().getResidentialDemand();
-    const int rX = x + 22;
+    const int rX = x + 24;
     const float rFrac = std::clamp(static_cast<float>(rDem) / 100.0f, -1.0f, 1.0f);
     const int rH = static_cast<int>(std::abs(rFrac) * maxBarH);
     if (rFrac >= 0) DrawRectangle(rX, baseY - rH, colW, rH, Color{ 46, 204, 113, 230 });
     else DrawRectangle(rX, baseY, colW, rH, Color{ 39, 174, 96, 120 });
     DrawRectangleLines(rX, baseY - maxBarH, colW, maxBarH * 2, Color{ 46, 204, 113, 80 });
-    DrawText("R", rX + 9, baseY + maxBarH + 5, 13, Color{ 46, 204, 113, 255 });
-    DrawText(TextFormat("%+d", rDem), rX + (rDem >= 0 ? 3 : 1), (rFrac >= 0 ? baseY - rH - 13 : baseY + rH + 2), 10, Color{ 210, 235, 220, 255 });
+    drawTextCentered("R", rX + colW / 2, baseY + maxBarH + 12, 13, Color{ 46, 204, 113, 255 }, true);
+    drawTextCentered(TextFormat("%+d", rDem), rX + colW / 2, (rFrac >= 0 ? baseY - rH - 8 : baseY + rH + 8), 11, Color{ 210, 235, 220, 255 });
 
     // Commercial (C)
     const int cDem = sim.getDemand().getCommercialDemand();
-    const int cX = x + 62;
+    const int cX = x + 64;
     const float cFrac = std::clamp(static_cast<float>(cDem) / 100.0f, -1.0f, 1.0f);
     const int cH = static_cast<int>(std::abs(cFrac) * maxBarH);
     if (cFrac >= 0) DrawRectangle(cX, baseY - cH, colW, cH, Color{ 52, 152, 219, 230 });
     else DrawRectangle(cX, baseY, colW, cH, Color{ 41, 128, 185, 120 });
     DrawRectangleLines(cX, baseY - maxBarH, colW, maxBarH * 2, Color{ 52, 152, 219, 80 });
-    DrawText("C", cX + 8, baseY + maxBarH + 5, 13, Color{ 52, 152, 219, 255 });
-    DrawText(TextFormat("%+d", cDem), cX + (cDem >= 0 ? 3 : 1), (cFrac >= 0 ? baseY - cH - 13 : baseY + cH + 2), 10, Color{ 210, 230, 255, 255 });
+    drawTextCentered("C", cX + colW / 2, baseY + maxBarH + 12, 13, Color{ 52, 152, 219, 255 }, true);
+    drawTextCentered(TextFormat("%+d", cDem), cX + colW / 2, (cFrac >= 0 ? baseY - cH - 8 : baseY + cH + 8), 11, Color{ 210, 230, 255, 255 });
 
     // Industrial (I)
     const int iDem = sim.getDemand().getIndustrialDemand();
-    const int iX = x + 102;
+    const int iX = x + 104;
     const float iFrac = std::clamp(static_cast<float>(iDem) / 100.0f, -1.0f, 1.0f);
     const int iH = static_cast<int>(std::abs(iFrac) * maxBarH);
     if (iFrac >= 0) DrawRectangle(iX, baseY - iH, colW, iH, Color{ 230, 126, 34, 230 });
     else DrawRectangle(iX, baseY, colW, iH, Color{ 211, 84, 0, 120 });
     DrawRectangleLines(iX, baseY - maxBarH, colW, maxBarH * 2, Color{ 230, 126, 34, 80 });
-    DrawText("I", iX + 10, baseY + maxBarH + 5, 13, Color{ 230, 126, 34, 255 });
-    DrawText(TextFormat("%+d", iDem), iX + (iDem >= 0 ? 3 : 1), (iFrac >= 0 ? baseY - iH - 13 : baseY + iH + 2), 10, Color{ 255, 230, 210, 255 });
+    drawTextCentered("I", iX + colW / 2, baseY + maxBarH + 12, 13, Color{ 230, 126, 34, 255 }, true);
+    drawTextCentered(TextFormat("%+d", iDem), iX + colW / 2, (iFrac >= 0 ? baseY - iH - 8 : baseY + iH + 8), 11, Color{ 255, 230, 210, 255 });
 }
 
 void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
@@ -380,10 +484,10 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
 {
     const int sw = GetScreenWidth();
     const int sh = GetScreenHeight();
-    const int dockW = 840;
-    const int dockH = 74;
+    const int dockW = 860;
+    const int dockH = 76;
     const int dockX = (sw - dockW) / 2;
-    const int dockY = sh - 84;
+    const int dockY = sh - 88;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(dockX), static_cast<float>(dockY),
                                    static_cast<float>(dockW), static_cast<float>(dockH) },
@@ -403,22 +507,22 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
     };
 
     const ToolItem tools[8] = {
-        { "[1]", "Road", "₹100", "Lays road pavement for citizen commutes & bus lines", Color{ 130, 135, 145, 255 },
+        { "[1]", "Road", "Rs. 100", "Lays road pavement for citizen commutes & bus lines", Color{ 130, 135, 145, 255 },
           !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Road,
           sim.getEconomy().canAfford(TileType::Road) },
-        { "[2]", "Resi", "₹2,000", "Zones residential plots for citizens to build homes", Color{ 70, 130, 220, 255 },
+        { "[2]", "Resi", "Rs. 2,000", "Zones residential plots for citizens to build homes", Color{ 70, 130, 220, 255 },
           !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Residential,
           sim.getEconomy().canAfford(TileType::Residential) },
-        { "[3]", "Comm", "₹5,000", "Zones commercial services and shops for city revenue", Color{ 240, 160, 40, 255 },
+        { "[3]", "Comm", "Rs. 5,000", "Zones commercial services and shops for city revenue", Color{ 240, 160, 40, 255 },
           !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Commercial,
           sim.getEconomy().canAfford(TileType::Commercial) },
-        { "[4]", "Ind", "₹10,000", "Zones factories creating jobs (generates heavy smog)", Color{ 175, 75, 75, 255 },
+        { "[4]", "Ind", "Rs. 10,000", "Zones factories creating jobs (generates heavy smog)", Color{ 175, 75, 75, 255 },
           !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Industrial,
           sim.getEconomy().canAfford(TileType::Industrial) },
-        { "[5]", "Park", "₹1,000", "Plants city parks (+15 land value boost, filters smog)", Color{ 35, 140, 60, 255 },
+        { "[5]", "Park", "Rs. 1,000", "Plants city parks (+15 land value boost, filters smog)", Color{ 35, 140, 60, 255 },
           !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Park,
           sim.getEconomy().canAfford(TileType::Park) },
-        { "[B]", "Bus Stop", "₹500", "Installs transit stops on roads for bus routes", Color{ 255, 215, 0, 255 },
+        { "[B]", "Bus Stop", "Rs. 500", "Installs transit stops on roads for bus routes", Color{ 255, 215, 0, 255 },
           busStopMode,
           sim.getEconomy().canAfford(urbania::Transit::BUS_STOP_COST) },
         { "[R]", "Route", "Transit", "Connects placed bus stops into active commuter routes", Color{ 180, 50, 220, 255 },
@@ -429,7 +533,7 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
           true }
     };
 
-    const int btnW = 96;
+    const int btnW = 98;
     const int btnH = 60;
     const int gap = 6;
     const Vector2 mouse = GetMousePosition();
@@ -437,13 +541,13 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
 
     for (int i = 0; i < 8; ++i)
     {
-        const int bx = dockX + 12 + i * (btnW + gap);
-        const int by = dockY + 7;
+        const int bx = dockX + 14 + i * (btnW + gap);
+        const int by = dockY + 8;
         const bool hovered = (mouse.x >= bx && mouse.x <= bx + btnW && mouse.y >= by && mouse.y <= by + btnH);
         const bool selected = tools[i].active;
         if (hovered) hoveredIdx = i;
 
-        Color btnBg = selected ? Color{ 35, 48, 75, 255 } : (hovered ? Color{ 25, 34, 52, 255 } : Color{ 18, 24, 38, 255 });
+        Color btnBg = selected ? Color{ 35, 52, 85, 255 } : (hovered ? Color{ 25, 34, 52, 255 } : Color{ 18, 24, 38, 255 });
         Color borderColor = selected ? Color{ 255, 215, 0, 255 } : (hovered ? Color{ 100, 130, 180, 255 } : Color{ 35, 48, 70, 255 });
 
         DrawRectangleRounded(Rectangle{ static_cast<float>(bx), static_cast<float>(by),
@@ -457,15 +561,15 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
         DrawRectangleRounded(Rectangle{ static_cast<float>(bx + 8), static_cast<float>(by + 8), 16, 16 }, 0.3f, 2, tools[i].swatch);
 
         // Hotkey tag
-        DrawText(tools[i].key, bx + 30, by + 8, 12, Color{ 130, 155, 195, 255 });
+        drawText(tools[i].key, bx + 30, by + 8, 12, Color{ 130, 155, 195, 255 }, true);
 
         // Name
         Color nameCol = selected ? WHITE : (tools[i].affordable ? Color{ 210, 220, 235, 255 } : Color{ 130, 140, 155, 255 });
-        DrawText(tools[i].name, bx + 8, by + 28, 13, nameCol);
+        drawText(tools[i].name, bx + 8, by + 28, 13, nameCol, true);
 
         // Price
         Color costCol = tools[i].affordable ? Color{ 46, 204, 113, 220 } : Color{ 231, 76, 60, 240 };
-        DrawText(tools[i].cost, bx + 8, by + 43, 11, costCol);
+        drawText(tools[i].cost, bx + 8, by + 43, 11, costCol);
     }
 
     // Floating Tooltip above dock when hovered
@@ -476,18 +580,19 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
         if (!t.affordable) tipText += " (Not Enough Funds)";
         tipText += " — " + std::string(t.desc);
 
-        const int tipW = MeasureText(tipText.c_str(), 12) + 24;
-        const int tipH = 26;
+        Vector2 sz = measureText(tipText.c_str(), 13, false);
+        const int tipW = static_cast<int>(sz.x) + 28;
+        const int tipH = 28;
         const int tipX = std::clamp(static_cast<int>(mouse.x) - tipW / 2, 16, sw - tipW - 16);
-        const int tipY = dockY - tipH - 6;
+        const int tipY = dockY - tipH - 8;
 
         DrawRectangleRounded(Rectangle{ static_cast<float>(tipX), static_cast<float>(tipY),
                                        static_cast<float>(tipW), static_cast<float>(tipH) },
-                             0.3f, 4, Color{ 10, 14, 22, 240 });
+                             0.3f, 4, Color{ 10, 14, 22, 245 });
         DrawRectangleRoundedLines(Rectangle{ static_cast<float>(tipX), static_cast<float>(tipY),
                                             static_cast<float>(tipW), static_cast<float>(tipH) },
                                   0.3f, 4, Color{ 60, 80, 115, 255 });
-        DrawText(tipText.c_str(), tipX + 12, tipY + 7, 12, t.affordable ? Color{ 230, 240, 255, 255 } : Color{ 255, 170, 170, 255 });
+        drawTextCentered(tipText.c_str(), tipX + tipW / 2, tipY + tipH / 2, 13, t.affordable ? Color{ 230, 240, 255, 255 } : Color{ 255, 170, 170, 255 });
     }
 }
 
@@ -495,19 +600,19 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
 {
     (void)world;
     const int sw = GetScreenWidth();
-    const int w = 350;
-    const int h = 480;
+    const int w = 360;
+    const int h = 500;
     const int x = sw - w - 16;
-    const int y = 58;
+    const int y = 60;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                         0.05f, 4, Color{ 14, 18, 28, 245 });
+                         0.05f, 4, Color{ 14, 18, 28, 248 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                               0.05f, 4, Color{ 40, 52, 75, 255 });
 
     // Header
-    DrawText("CITY DASHBOARD", x + 16, y + 12, 14, Color{ 200, 215, 240, 255 });
-    DrawText("[TAB to Hide]", x + w - 95, y + 14, 11, Color{ 120, 140, 175, 255 });
+    drawText("CITY DASHBOARD", x + 16, y + 12, 15, Color{ 200, 215, 240, 255 }, true);
+    drawText("[TAB to Close]", x + w - 100, y + 14, 12, Color{ 120, 140, 175, 255 });
 
     // Tab switcher
     const char* tabNames[5] = { "Overview", "Economy", "People", "Transit", "Eco" };
@@ -515,147 +620,147 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
     for (int t = 0; t < 5; ++t)
     {
         const int tx = x + 12 + t * tabW;
-        const int ty = y + 34;
+        const int ty = y + 36;
         const bool active = (static_cast<int>(currentTab) == t);
         const Color tabBg = active ? Color{ 35, 65, 115, 255 } : Color{ 22, 28, 42, 255 };
         const Color tabTxt = active ? WHITE : Color{ 140, 155, 180, 255 };
 
-        DrawRectangleRounded(Rectangle{ static_cast<float>(tx), static_cast<float>(ty), static_cast<float>(tabW - 2), 24 }, 0.2f, 2, tabBg);
-        DrawText(tabNames[t], tx + 4, ty + 6, 11, tabTxt);
+        DrawRectangleRounded(Rectangle{ static_cast<float>(tx), static_cast<float>(ty), static_cast<float>(tabW - 2), 26 }, 0.2f, 2, tabBg);
+        drawTextCentered(tabNames[t], tx + (tabW - 2) / 2, ty + 13, 12, tabTxt, active);
     }
 
-    DrawLine(x + 12, y + 64, x + w - 12, y + 64, Color{ 35, 48, 70, 255 });
+    DrawLine(x + 12, y + 68, x + w - 12, y + 68, Color{ 35, 48, 70, 255 });
 
-    int cy = y + 74;
+    int cy = y + 78;
 
     switch (currentTab)
     {
     case DashboardTab::Overview:
     {
-        DrawText("CITY OVERVIEW", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        drawText("CITY OVERVIEW", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Total Population: %d citizens", sim.getPopulation().getTotalPopulation()), x + 16, cy, 13, WHITE);
         cy += 20;
-        DrawText(TextFormat("Total Population: %d citizens", sim.getPopulation().getTotalPopulation()), x + 16, cy, 13, WHITE);
+        drawText(TextFormat("Housing Capacity: %d / %d (%.0f%% full)", sim.getHousing().getTotalResidents(), sim.getHousing().getTotalCapacity(), sim.getHousing().getOccupancyRatio() * 100.0f), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Housing Capacity: %d / %d (%.0f%% full)", sim.getHousing().getTotalResidents(), sim.getHousing().getTotalCapacity(), sim.getHousing().getOccupancyRatio() * 100.0f), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        drawText(TextFormat("Average Happiness: %.1f%%", sim.getHappiness().getAverageHappiness()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
         cy += 20;
-        DrawText(TextFormat("Average Happiness: %.1f%%", sim.getHappiness().getAverageHappiness()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
+        drawText(TextFormat("Average Land Value: %.1f / 100", sim.getLandValue().getAverageLandValue()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Average Land Value: %.1f / 100", sim.getLandValue().getAverageLandValue()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 20;
-        DrawText(TextFormat("Average Pollution: %.1f ppm", sim.getPollution().getAveragePollution()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
-        cy += 24;
+        drawText(TextFormat("Average Pollution: %.1f ppm", sim.getPollution().getAveragePollution()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
+        cy += 26;
 
-        DrawText("MUNICIPAL UTILITIES", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
-        cy += 18;
-        DrawText(TextFormat("Power: %d / %d kW • Water: %d / %d kL",
+        drawText("MUNICIPAL UTILITIES", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
+        cy += 20;
+        drawText(TextFormat("Power: %d / %d kW • Water: %d / %d kL",
                             sim.getUtilities().getElectricityDemand(), sim.getUtilities().getElectricityCapacity(),
                             sim.getUtilities().getWaterDemand(), sim.getUtilities().getWaterCapacity()),
-                 x + 16, cy, 12, WHITE);
-        cy += 18;
-        DrawText(TextFormat("Sewage: %d / %d kL • Supplied: %d / %d",
+                 x + 16, cy, 13, WHITE);
+        cy += 20;
+        drawText(TextFormat("Sewage: %d / %d kL • Supplied: %d / %d",
                             sim.getUtilities().getSewageDemand(), sim.getUtilities().getSewageCapacity(),
                             sim.getUtilities().getSuppliedBuildingCount(), sim.getUtilities().getTotalDevelopedBuildingCount()),
-                 x + 16, cy, 12, Color{ 190, 205, 225, 255 });
-        cy += 24;
+                 x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        cy += 26;
 
         const int net = static_cast<int>(sim.getEconomy().getNetIncome());
-        DrawText("DAILY CASH FLOW", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        drawText("DAILY CASH FLOW", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
         cy += 20;
-        DrawText(TextFormat("Net Flow: %s%s / day", (net >= 0 ? "+" : "-"), formatRupees(std::abs(net)).c_str()),
-                 x + 16, cy, 14, (net >= 0 ? Color{ 46, 204, 113, 255 } : Color{ 231, 76, 60, 255 }));
+        drawText(TextFormat("Net Daily Margin: %s%s / day", (net >= 0 ? "+" : "-"), formatRupees(std::abs(net)).c_str()),
+                 x + 16, cy, 14, (net >= 0 ? Color{ 46, 204, 113, 255 } : Color{ 231, 76, 60, 255 }), true);
         break;
     }
 
     case DashboardTab::Economy:
     {
-        DrawText("FINANCES & LEDGER", x + 16, cy, 12, Color{ 46, 204, 113, 255 });
-        cy += 20;
-        DrawText(TextFormat("Treasury Balance: %s", formatRupees(sim.getEconomy().getMoney()).c_str()), x + 16, cy, 13, WHITE);
-        cy += 20;
-        DrawText(TextFormat("Daily Tax Revenue: +%s", formatRupees(static_cast<int>(sim.getEconomy().getTaxIncome())).c_str()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
-        cy += 20;
-        DrawText(TextFormat("Municipal Upkeep: -%s", formatRupees(static_cast<int>(sim.getEconomy().getMaintenanceCost())).c_str()), x + 16, cy, 13, Color{ 231, 76, 60, 255 });
-        cy += 18;
-        DrawText(TextFormat(" (Includes Utility Upkeep: -%s)", formatRupees(static_cast<int>(sim.getEconomy().getUtilityMaintenanceCost())).c_str()), x + 16, cy, 11, Color{ 160, 180, 210, 255 });
+        drawText("FINANCES & LEDGER", x + 16, cy, 13, Color{ 46, 204, 113, 255 }, true);
         cy += 22;
+        drawText(TextFormat("Treasury Balance: %s", formatRupees(sim.getEconomy().getMoney()).c_str()), x + 16, cy, 13, WHITE, true);
+        cy += 20;
+        drawText(TextFormat("Daily Tax Revenue: +%s", formatRupees(static_cast<int>(sim.getEconomy().getTaxIncome())).c_str()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
+        cy += 20;
+        drawText(TextFormat("Municipal Upkeep: -%s", formatRupees(static_cast<int>(sim.getEconomy().getMaintenanceCost())).c_str()), x + 16, cy, 13, Color{ 231, 76, 60, 255 });
+        cy += 18;
+        drawText(TextFormat(" (Includes Utility Upkeep: -%s)", formatRupees(static_cast<int>(sim.getEconomy().getUtilityMaintenanceCost())).c_str()), x + 16, cy, 12, Color{ 160, 180, 210, 255 });
+        cy += 24;
 
         const int net = static_cast<int>(sim.getEconomy().getNetIncome());
-        DrawText(TextFormat("Net Daily Margin: %s%s / day", (net >= 0 ? "+" : "-"), formatRupees(std::abs(net)).c_str()),
-                 x + 16, cy, 14, (net >= 0 ? Color{ 46, 204, 113, 255 } : Color{ 231, 76, 60, 255 }));
-        cy += 28;
+        drawText(TextFormat("Net Daily Margin: %s%s / day", (net >= 0 ? "+" : "-"), formatRupees(std::abs(net)).c_str()),
+                 x + 16, cy, 14, (net >= 0 ? Color{ 46, 204, 113, 255 } : Color{ 231, 76, 60, 255 }), true);
+        cy += 30;
 
-        DrawText("ZONE DEMAND INDICES", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        drawText("ZONE DEMAND INDICES", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Residential Demand: %+d", sim.getDemand().getResidentialDemand()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
         cy += 20;
-        DrawText(TextFormat("Residential Demand: %+d", sim.getDemand().getResidentialDemand()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
-        cy += 18;
-        DrawText(TextFormat("Commercial Demand: %+d", sim.getDemand().getCommercialDemand()), x + 16, cy, 13, Color{ 52, 152, 219, 255 });
-        cy += 18;
-        DrawText(TextFormat("Industrial Demand: %+d", sim.getDemand().getIndustrialDemand()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
+        drawText(TextFormat("Commercial Demand: %+d", sim.getDemand().getCommercialDemand()), x + 16, cy, 13, Color{ 52, 152, 219, 255 });
+        cy += 20;
+        drawText(TextFormat("Industrial Demand: %+d", sim.getDemand().getIndustrialDemand()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
         break;
     }
 
     case DashboardTab::Population:
     {
-        DrawText("CITIZENS & WORKFORCE", x + 16, cy, 12, Color{ 52, 152, 219, 255 });
+        drawText("CITIZENS & WORKFORCE", x + 16, cy, 13, Color{ 52, 152, 219, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Total Citizens: %d", sim.getPopulation().getTotalPopulation()), x + 16, cy, 13, WHITE, true);
         cy += 20;
-        DrawText(TextFormat("Total Citizens: %d", sim.getPopulation().getTotalPopulation()), x + 16, cy, 13, WHITE);
+        drawText(TextFormat("Employed: %d • Unemployed: %d", sim.getEmployment().getEmployedCitizens(), sim.getEmployment().getUnemployedCitizens()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Employed: %d • Unemployed: %d", sim.getEmployment().getEmployedCitizens(), sim.getEmployment().getUnemployedCitizens()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 20;
-        DrawText(TextFormat("Workplace Jobs: %d / %d filled", sim.getEmployment().getOccupiedJobs(), sim.getEmployment().getTotalJobs()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 26;
+        drawText(TextFormat("Workplace Jobs: %d / %d filled", sim.getEmployment().getOccupiedJobs(), sim.getEmployment().getTotalJobs()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        cy += 28;
 
-        DrawText("RESIDENTIAL CAPACITY", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        drawText("RESIDENTIAL CAPACITY", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Capacity: %d beds • %d residents", sim.getHousing().getTotalCapacity(), sim.getHousing().getTotalResidents()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Capacity: %d beds • %d residents", sim.getHousing().getTotalCapacity(), sim.getHousing().getTotalResidents()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 20;
-        DrawText(TextFormat("Housing Pressure: %+d", sim.getHousing().getHousingPressure()), x + 16, cy, 13, (sim.getHousing().getHousingPressure() > 0 ? Color{ 241, 196, 15, 255 } : Color{ 140, 160, 190, 255 }));
+        drawText(TextFormat("Housing Pressure: %+d", sim.getHousing().getHousingPressure()), x + 16, cy, 13, (sim.getHousing().getHousingPressure() > 0 ? Color{ 241, 196, 15, 255 } : Color{ 140, 160, 190, 255 }));
         break;
     }
 
     case DashboardTab::Transit:
     {
-        DrawText("MOBILITY & TRANSIT", x + 16, cy, 12, Color{ 230, 126, 34, 255 });
+        drawText("MOBILITY & TRANSIT", x + 16, cy, 13, Color{ 230, 126, 34, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Road Network: %d road nodes", sim.getRoadNetwork().getNodeCount()), x + 16, cy, 13, WHITE);
         cy += 20;
-        DrawText(TextFormat("Road Network: %d road nodes", sim.getRoadNetwork().getNodeCount()), x + 16, cy, 13, WHITE);
+        drawText(TextFormat("Private Vehicles: %d active cars", sim.getTraffic().getActiveVehicleCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Private Vehicles: %d active cars", sim.getTraffic().getActiveVehicleCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 20;
-        DrawText(TextFormat("Congested Roads: %d (Max: %.1fx)", sim.getCongestion().getCongestedRoadCount(), sim.getCongestion().getMaxCongestion()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 26;
+        drawText(TextFormat("Congested Roads: %d (Max: %.1fx)", sim.getCongestion().getCongestedRoadCount(), sim.getCongestion().getMaxCongestion()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        cy += 28;
 
-        DrawText("PUBLIC BUS TRANSIT", x + 16, cy, 12, Color{ 255, 215, 0, 255 });
+        drawText("PUBLIC BUS TRANSIT", x + 16, cy, 13, Color{ 255, 215, 0, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Bus Stops: %d placed", sim.getTransit().getBusStopCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText(TextFormat("Bus Stops: %d placed", sim.getTransit().getBusStopCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 18;
-        DrawText(TextFormat("Bus Routes: %d configured", sim.getTransit().getRouteCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
-        cy += 18;
-        DrawText(TextFormat("Buses: %d active / %d total", sim.getTransit().getActiveBusCount(), sim.getTransit().getBusCount()), x + 16, cy, 13, Color{ 255, 215, 0, 255 });
-        cy += 18;
-        DrawText(TextFormat("Commuters: %d routed • %d unrouted", sim.getCommuteSystem().getRoutedCitizens(), sim.getCommuteSystem().getUnroutedCitizens()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        drawText(TextFormat("Bus Routes: %d configured", sim.getTransit().getRouteCount()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
+        cy += 20;
+        drawText(TextFormat("Buses: %d active / %d total", sim.getTransit().getActiveBusCount(), sim.getTransit().getBusCount()), x + 16, cy, 13, Color{ 255, 215, 0, 255 }, true);
+        cy += 20;
+        drawText(TextFormat("Commuters: %d routed • %d unrouted", sim.getCommuteSystem().getRoutedCitizens(), sim.getCommuteSystem().getUnroutedCitizens()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         break;
     }
 
     case DashboardTab::Environment:
     {
-        DrawText("ENVIRONMENT & LAND VALUE", x + 16, cy, 12, Color{ 46, 204, 113, 255 });
+        drawText("ENVIRONMENT & LAND VALUE", x + 16, cy, 13, Color{ 46, 204, 113, 255 }, true);
+        cy += 22;
+        drawText(TextFormat("Average Pollution: %.1f ppm", sim.getPollution().getAveragePollution()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
         cy += 20;
-        DrawText(TextFormat("Average Pollution: %.1f ppm", sim.getPollution().getAveragePollution()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
+        drawText(TextFormat("Max Pollution Hotspot: %.1f ppm", sim.getPollution().getMaxPollution()), x + 16, cy, 13, Color{ 231, 76, 60, 255 });
         cy += 20;
-        DrawText(TextFormat("Max Pollution Hotspot: %.1f ppm", sim.getPollution().getMaxPollution()), x + 16, cy, 13, Color{ 231, 76, 60, 255 });
-        cy += 20;
-        DrawText(TextFormat("Average Land Desirability: %.1f / 100", sim.getLandValue().getAverageLandValue()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
-        cy += 26;
+        drawText(TextFormat("Average Land Desirability: %.1f / 100", sim.getLandValue().getAverageLandValue()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
+        cy += 28;
 
-        DrawText("HAPPINESS IMPACT FACTORS", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        drawText("HAPPINESS IMPACT FACTORS", x + 16, cy, 13, Color{ 0, 180, 240, 255 }, true);
+        cy += 22;
+        drawText("• Industrial zones create smog plumes", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
         cy += 20;
-        DrawText("• Industrial zones create smog plumes", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
-        cy += 18;
-        DrawText("• Parks clean smog & boost nearby Land Value", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
-        cy += 18;
-        DrawText("• Heavy traffic congestion slows commutes", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
-        cy += 18;
-        DrawText("• Unsupplied homes incur -20 happiness penalty", x + 16, cy, 12, Color{ 241, 196, 15, 255 });
+        drawText("• Parks clean smog & boost nearby Land Value", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
+        cy += 20;
+        drawText("• Heavy traffic congestion slows commutes", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
+        cy += 20;
+        drawText("• Unsupplied homes incur -20 happiness penalty", x + 16, cy, 12, Color{ 241, 196, 15, 255 });
         break;
     }
     }
@@ -665,13 +770,13 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
                            const TileCoordinate& hovered)
 {
     const int sw = GetScreenWidth();
-    const int w = 260;
-    const int h = 185;
+    const int w = 270;
+    const int h = 195;
     const int x = sw - w - 16;
     const int y = GetScreenHeight() - h - 94;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                         0.1f, 4, Color{ 14, 18, 28, 240 });
+                         0.1f, 4, Color{ 14, 18, 28, 245 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                               0.1f, 4, Color{ 40, 52, 75, 255 });
 
@@ -679,7 +784,7 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
     int cy = y + 10;
 
     // Header with Zone Badge
-    DrawText(TextFormat("TILE (%d, %d)", hovered.x, hovered.y), x + 12, cy, 13, WHITE);
+    drawText(TextFormat("TILE (%d, %d)", hovered.x, hovered.y), x + 12, cy, 14, WHITE, true);
 
     Color badgeCol = Color{ 48, 140, 68, 255 };
     const char* typeName = "Grass";
@@ -693,47 +798,47 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
     default: break;
     }
 
-    DrawRectangleRounded(Rectangle{ static_cast<float>(x + 140), static_cast<float>(cy - 2), 108, 18 }, 0.3f, 4, badgeCol);
-    DrawText(typeName, x + 148, cy + 1, 11, Color{ 10, 20, 30, 255 });
-    cy += 22;
+    DrawRectangleRounded(Rectangle{ static_cast<float>(x + 148), static_cast<float>(cy - 1), 110, 20 }, 0.3f, 4, badgeCol);
+    drawTextCentered(typeName, x + 203, cy + 9, 12, Color{ 10, 20, 30, 255 }, true);
+    cy += 24;
 
     DrawLine(x + 10, cy, x + w - 10, cy, Color{ 35, 48, 70, 255 });
     cy += 10;
 
     // Land Value
     const float lv = sim.getLandValue().getLandValue(hovered.x, hovered.y);
-    DrawText(TextFormat("Land Value: %.1f / 100", lv), x + 12, cy, 12, Color{ 190, 205, 225, 255 });
-    cy += 18;
+    drawText(TextFormat("Land Value: %.1f / 100", lv), x + 12, cy, 13, Color{ 190, 205, 225, 255 });
+    cy += 20;
 
     // Specific tile metrics
     if (t.type == TileType::Residential)
     {
         const int res = sim.getPopulation().getResidentsAt(hovered.x, hovered.y);
-        DrawText(TextFormat("Residents: %d / %d", res, Housing::CAPACITY_PER_TILE), x + 12, cy, 12, Color{ 52, 152, 219, 255 });
-        cy += 18;
+        drawText(TextFormat("Residents: %d / %d", res, Housing::CAPACITY_PER_TILE), x + 12, cy, 13, Color{ 52, 152, 219, 255 });
+        cy += 20;
     }
     else if (t.type == TileType::Commercial)
     {
-        DrawText("Commercial Shop: Active", x + 12, cy, 12, Color{ 240, 160, 40, 255 });
-        cy += 18;
+        drawText("Commercial Shop: Active", x + 12, cy, 13, Color{ 240, 160, 40, 255 });
+        cy += 20;
     }
     else if (t.type == TileType::Industrial)
     {
         const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
-        DrawText(TextFormat("Smog Output: %.1f ppm", p), x + 12, cy, 12, Color{ 230, 126, 34, 255 });
-        cy += 18;
+        drawText(TextFormat("Smog Output: %.1f ppm", p), x + 12, cy, 13, Color{ 230, 126, 34, 255 });
+        cy += 20;
     }
     else if (t.type == TileType::Road)
     {
         const int vCount = sim.getCongestion().getVehicleCount(hovered.x, hovered.y);
         const float cong = sim.getCongestion().getCongestion(hovered.x, hovered.y);
-        DrawText(TextFormat("Traffic: %d / 5 (%.1fx slow)", vCount, cong), x + 12, cy, 12, (cong > 1.0f ? Color{ 231, 76, 60, 255 } : Color{ 190, 205, 225, 255 }));
-        cy += 18;
+        drawText(TextFormat("Traffic: %d / 5 (%.1fx delay)", vCount, cong), x + 12, cy, 13, (cong > 1.0f ? Color{ 231, 76, 60, 255 } : Color{ 190, 205, 225, 255 }));
+        cy += 20;
     }
     else if (t.type == TileType::Park)
     {
-        DrawText("Park: +15 Land Value Bonus", x + 12, cy, 12, Color{ 46, 204, 113, 255 });
-        cy += 18;
+        drawText("Park: +15 Land Value Bonus", x + 12, cy, 13, Color{ 46, 204, 113, 255 });
+        cy += 20;
     }
 
     if (t.type == TileType::Residential || t.type == TileType::Commercial || t.type == TileType::Industrial)
@@ -741,8 +846,8 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
         const auto uStatus = sim.getUtilities().getTileStatus(hovered);
         if (uStatus.isFullySupplied)
         {
-            DrawText("Utilities: Supplied (P/W/S)", x + 12, cy, 11, Color{ 0, 200, 240, 255 });
-            cy += 18;
+            drawText("Utilities: Supplied (Power/Water/Sewage)", x + 12, cy, 12, Color{ 0, 200, 240, 255 });
+            cy += 20;
         }
         else
         {
@@ -754,8 +859,8 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
                 if (!uStatus.hasSewage) s += "No Sewage";
             }
             s += ")";
-            DrawText(s.c_str(), x + 12, cy, 11, Color{ 231, 76, 60, 255 });
-            cy += 18;
+            drawText(s.c_str(), x + 12, cy, 12, Color{ 231, 76, 60, 255 });
+            cy += 20;
         }
     }
 
@@ -764,8 +869,8 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
         const auto* stop = sim.getTransit().getBusStop(hovered);
         if (stop != nullptr)
         {
-            DrawText(TextFormat("Transit: Bus Stop #%d", stop->id), x + 12, cy, 12, Color{ 255, 215, 0, 255 });
-            cy += 18;
+            drawText(TextFormat("Transit: Bus Stop #%d", stop->id), x + 12, cy, 13, Color{ 255, 215, 0, 255 }, true);
+            cy += 20;
         }
     }
 
@@ -779,10 +884,10 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
             {
                 const auto* r = sim.getTransit().getRoute(bus.routeId);
                 const int total = (r != nullptr) ? static_cast<int>(r->stopIds.size()) : 0;
-                DrawText(TextFormat("Bus #%d • Route #%d (Stop %d/%d)", bus.id, bus.routeId,
+                drawText(TextFormat("Bus #%d • Route #%d (Stop %d/%d)", bus.id, bus.routeId,
                                     bus.currentStopIndex + 1, total),
-                         x + 12, cy, 11, Color{ 255, 215, 0, 255 });
-                cy += 18;
+                         x + 12, cy, 12, Color{ 255, 215, 0, 255 });
+                cy += 20;
                 break;
             }
         }
@@ -791,7 +896,7 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
     const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
     if (p > 0.01f)
     {
-        DrawText(TextFormat("Air Pollution: %.1f ppm", p), x + 12, cy, 12, Color{ 230, 126, 34, 255 });
+        drawText(TextFormat("Air Pollution: %.1f ppm", p), x + 12, cy, 13, Color{ 230, 126, 34, 255 });
     }
 }
 
@@ -804,9 +909,9 @@ void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool l
     }
 
     const int x = 16;
-    const int y = 230;
-    const int w = 150;
-    const int h = utilitiesOverlay ? 86 : 76;
+    const int y = 242;
+    const int w = 154;
+    const int h = utilitiesOverlay ? 90 : 80;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.1f, 4, Color{ 14, 18, 28, 235 });
@@ -815,38 +920,38 @@ void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool l
 
     if (utilitiesOverlay)
     {
-        DrawText("UTILITIES (F8)", x + 12, y + 8, 11, Color{ 0, 200, 240, 255 });
+        drawText("UTILITIES (F8)", x + 12, y + 8, 12, Color{ 0, 200, 240, 255 }, true);
         DrawRectangle(x + 12, y + 26, 12, 12, Color{ 0, 200, 240, 200 });
-        DrawText("Supplied", x + 28, y + 26, 10, Color{ 210, 235, 255, 255 });
-        DrawRectangle(x + 78, y + 26, 12, 12, Color{ 231, 76, 60, 200 });
-        DrawText("Unsupplied", x + 94, y + 26, 10, Color{ 255, 210, 210, 255 });
-        DrawText(TextFormat("Demand: %dE / %dW / %dS", sim.getUtilities().getElectricityDemand(),
+        drawText("Supplied", x + 28, y + 26, 11, Color{ 210, 235, 255, 255 });
+        DrawRectangle(x + 82, y + 26, 12, 12, Color{ 231, 76, 60, 200 });
+        drawText("Unsupplied", x + 98, y + 26, 11, Color{ 255, 210, 210, 255 });
+        drawText(TextFormat("Demand: %dE / %dW / %dS", sim.getUtilities().getElectricityDemand(),
                             sim.getUtilities().getWaterDemand(), sim.getUtilities().getSewageDemand()),
-                 x + 12, y + 46, 10, Color{ 160, 185, 215, 255 });
-        DrawText(TextFormat("Capacity: %d / %d / %d", sim.getUtilities().getElectricityCapacity(),
+                 x + 12, y + 46, 11, Color{ 160, 185, 215, 255 });
+        drawText(TextFormat("Capacity: %d / %d / %d", sim.getUtilities().getElectricityCapacity(),
                             sim.getUtilities().getWaterCapacity(), sim.getUtilities().getSewageCapacity()),
-                 x + 12, y + 64, 10, Color{ 130, 160, 195, 255 });
+                 x + 12, y + 66, 11, Color{ 130, 160, 195, 255 });
     }
     else if (pollutionOverlay)
     {
-        DrawText("POLLUTION SMOG", x + 12, y + 8, 11, Color{ 230, 126, 34, 255 });
+        drawText("POLLUTION SMOG", x + 12, y + 8, 12, Color{ 230, 126, 34, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 60, 140, 80, 200 }, Color{ 180, 40, 40, 255 });
-        DrawText("0 Clean", x + 12, y + 44, 10, Color{ 160, 180, 200, 255 });
-        DrawText("100ppm", x + w - 54, y + 44, 10, Color{ 160, 180, 200, 255 });
+        drawText("0 Clean", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
+        drawText("100ppm", x + w - 56, y + 46, 11, Color{ 160, 180, 200, 255 });
     }
     else if (landValueOverlay)
     {
-        DrawText("LAND VALUE", x + 12, y + 8, 11, Color{ 46, 204, 113, 255 });
+        drawText("LAND VALUE", x + 12, y + 8, 12, Color{ 46, 204, 113, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 180, 40, 40, 200 }, Color{ 46, 204, 113, 255 });
-        DrawText("0 Low", x + 12, y + 44, 10, Color{ 160, 180, 200, 255 });
-        DrawText("100 High", x + w - 56, y + 44, 10, Color{ 160, 180, 200, 255 });
+        drawText("0 Low", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
+        drawText("100 High", x + w - 58, y + 46, 11, Color{ 160, 180, 200, 255 });
     }
     else if (housingOverlay)
     {
-        DrawText("HOUSING OCCUPANCY", x + 12, y + 8, 11, Color{ 52, 152, 219, 255 });
+        drawText("HOUSING OCCUPANCY", x + 12, y + 8, 12, Color{ 52, 152, 219, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 52, 152, 219, 200 }, Color{ 231, 76, 60, 255 });
-        DrawText("0% Empty", x + 12, y + 44, 10, Color{ 160, 180, 200, 255 });
-        DrawText("100% Full", x + w - 58, y + 44, 10, Color{ 160, 180, 200, 255 });
+        drawText("0% Empty", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
+        drawText("100% Full", x + w - 60, y + 46, 11, Color{ 160, 180, 200, 255 });
     }
 }
 
@@ -857,48 +962,48 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
 
     if (demolishMode)
     {
-        const int w = 480;
-        const int h = 44;
+        const int w = 500;
+        const int h = 48;
         const int x = (sw - w) / 2;
-        const int y = 56;
+        const int y = 60;
 
         DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                              0.25f, 4, Color{ 55, 15, 15, 240 });
         DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                                   0.25f, 4, Color{ 231, 76, 60, 255 });
 
-        DrawText("⚠ DEMOLISH MODE ACTIVE", x + 16, y + 8, 13, Color{ 255, 100, 100, 255 });
-        DrawText("Click developed tiles to clear (₹20) • Press [D] or [Esc] to Exit", x + 16, y + 24, 11, Color{ 230, 210, 210, 255 });
+        drawText("DEMOLISH MODE ACTIVE", x + 16, y + 8, 14, Color{ 255, 100, 100, 255 }, true);
+        drawText("Click developed tiles to clear (Free) • Press [D] or [Esc] to Exit", x + 16, y + 26, 12, Color{ 230, 210, 210, 255 });
     }
     else if (busStopMode)
     {
-        const int w = 520;
-        const int h = 44;
+        const int w = 540;
+        const int h = 48;
         const int x = (sw - w) / 2;
-        const int y = 56;
+        const int y = 60;
 
         DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                              0.25f, 4, Color{ 15, 35, 55, 240 });
         DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                                   0.25f, 4, Color{ 255, 215, 0, 255 });
 
-        DrawText("🚏 BUS STOP PLACEMENT", x + 16, y + 8, 13, Color{ 255, 225, 60, 255 });
-        DrawText("Click road tiles to place stop (₹500) • [Shift+Click] Remove • [B] Exit", x + 16, y + 24, 11, Color{ 210, 235, 255, 255 });
+        drawText("BUS STOP PLACEMENT", x + 16, y + 8, 14, Color{ 255, 225, 60, 255 }, true);
+        drawText("Click road tiles to place stop (Rs. 500) • [Shift+Click] Remove • [B] Exit", x + 16, y + 26, 12, Color{ 210, 235, 255, 255 });
     }
     else if (routeMode)
     {
-        const int w = 560;
-        const int h = 54;
+        const int w = 580;
+        const int h = 58;
         const int x = (sw - w) / 2;
-        const int y = 56;
+        const int y = 60;
 
         DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                              0.25f, 4, Color{ 45, 20, 60, 240 });
         DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                                   0.25f, 4, Color{ 180, 50, 220, 255 });
 
-        DrawText("🚌 BUS ROUTE BUILDER", x + 16, y + 10, 14, Color{ 255, 220, 40, 255 });
-        DrawText("[ENTER] Save  [ESC] Cancel  [Shift+R] Delete Latest", x + 200, y + 11, 12, Color{ 220, 200, 240, 255 });
+        drawText("BUS ROUTE BUILDER", x + 16, y + 10, 15, Color{ 255, 220, 40, 255 }, true);
+        drawText("[ENTER] Save  [ESC] Cancel  [Shift+R] Delete Latest", x + 200, y + 11, 13, Color{ 220, 200, 240, 255 });
 
         std::string seq = "Stops: ";
         if (currentRouteStops.empty())
@@ -914,7 +1019,7 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
             }
             seq += " (" + std::to_string(currentRouteStops.size()) + " total)";
         }
-        DrawText(seq.c_str(), x + 16, y + 30, 12, Color{ 245, 235, 255, 255 });
+        drawText(seq.c_str(), x + 16, y + 32, 13, Color{ 245, 235, 255, 255 });
     }
 }
 
@@ -926,18 +1031,18 @@ void UI::drawToast(const std::string& msg, float timer, bool hasBanner)
     }
 
     const int sw = GetScreenWidth();
-    const int textW = MeasureText(msg.c_str(), 14);
-    const int w = textW + 40;
-    const int h = 36;
+    Vector2 sz = measureText(msg.c_str(), 14, true);
+    const int w = static_cast<int>(sz.x) + 48;
+    const int h = 38;
     const int x = (sw - w) / 2;
-    const int y = hasBanner ? 122 : 58;
+    const int y = hasBanner ? 126 : 60;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                         0.3f, 4, Color{ 20, 28, 45, 240 });
+                         0.3f, 4, Color{ 20, 28, 45, 245 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                               0.3f, 4, Color{ 0, 180, 240, 255 });
 
-    DrawText(msg.c_str(), x + 20, y + 11, 14, Color{ 240, 245, 255, 255 });
+    drawTextCentered(msg.c_str(), x + w / 2, y + h / 2, 14, Color{ 240, 245, 255, 255 }, true);
 }
 
 void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
@@ -949,12 +1054,12 @@ void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
 
     const int sw = GetScreenWidth();
     const int sh = GetScreenHeight();
-    const int w = 480;
-    const int h = 520;
+    const int w = 520;
+    const int h = 540;
     const int x = (sw - w) / 2;
     const int y = (sh - h) / 2;
 
-    DrawRectangle(0, 0, sw, sh, Color{ 0, 0, 0, 130 });
+    DrawRectangle(0, 0, sw, sh, Color{ 0, 0, 0, 140 });
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.08f, 4, Color{ 16, 22, 34, 250 });
@@ -966,16 +1071,16 @@ void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
     const bool allPassed = (total > 0 && passed == total);
 
     Color headerBg = allPassed ? Color{ 39, 174, 96, 255 } : Color{ 192, 57, 43, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(x + 12), static_cast<float>(y + 12), static_cast<float>(w - 24), 40 }, 0.2f, 4, headerBg);
-    DrawText(TextFormat("SELF-TEST SUITE: %d / %d PASSED", passed, total), x + 24, y + 23, 16, WHITE);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(x + 12), static_cast<float>(y + 12), static_cast<float>(w - 24), 44 }, 0.2f, 4, headerBg);
+    drawTextCentered(TextFormat("SELF-TEST SUITE: %d / %d PASSED", passed, total), x + w / 2, y + 34, 17, WHITE, true);
 
-    int listY = y + 66;
+    int listY = y + 70;
     int count = 0;
     for (const std::string& line : selfTest.getResults())
     {
-        if (count >= 16)
+        if (count >= 15)
         {
-            DrawText("... (and more)", x + 24, listY, 12, Color{ 140, 160, 190, 255 });
+            drawText("... (and more)", x + 24, listY, 13, Color{ 140, 160, 190, 255 });
             break;
         }
 
@@ -983,19 +1088,19 @@ void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
         const bool isSkip = line.rfind("SKIP", 0) == 0;
 
         Color badgeColor = isOk ? Color{ 46, 204, 113, 255 } : (isSkip ? Color{ 241, 196, 15, 255 } : Color{ 231, 76, 60, 255 });
-        DrawRectangleRounded(Rectangle{ static_cast<float>(x + 24), static_cast<float>(listY), 36, 18 }, 0.3f, 4, badgeColor);
-        DrawText(isOk ? "PASS" : (isSkip ? "SKIP" : "FAIL"), x + 28, listY + 3, 10, Color{ 10, 20, 30, 255 });
+        DrawRectangleRounded(Rectangle{ static_cast<float>(x + 24), static_cast<float>(listY), 42, 20 }, 0.3f, 4, badgeColor);
+        drawTextCentered(isOk ? "PASS" : (isSkip ? "SKIP" : "FAIL"), x + 45, listY + 10, 11, Color{ 10, 20, 30, 255 }, true);
 
-        DrawText(line.c_str(), x + 68, listY + 2, 12, Color{ 215, 225, 240, 255 });
-        listY += 24;
+        drawText(line.c_str(), x + 76, listY + 3, 13, Color{ 215, 225, 240, 255 });
+        listY += 26;
         ++count;
     }
 
-    DrawRectangleRounded(Rectangle{ static_cast<float>(x + w / 2 - 60), static_cast<float>(y + h - 42), 120, 28 }, 0.3f, 4, Color{ 45, 60, 90, 255 });
-    DrawText("Close (ESC)", x + w / 2 - 38, y + h - 35, 13, WHITE);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(x + w / 2 - 60), static_cast<float>(y + h - 44), 120, 30 }, 0.3f, 4, Color{ 45, 60, 90, 255 });
+    drawTextCentered("Close (ESC)", x + w / 2, y + h - 29, 14, WHITE, true);
 
     if (IsKeyPressed(KEY_ESCAPE) || (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-                                     GetMousePosition().y >= y + h - 42 && GetMousePosition().y <= y + h - 14 &&
+                                     GetMousePosition().y >= y + h - 44 && GetMousePosition().y <= y + h - 14 &&
                                      GetMousePosition().x >= x + w / 2 - 60 && GetMousePosition().x <= x + w / 2 + 60))
     {
         showSelfTestModal = false;

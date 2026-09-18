@@ -30,6 +30,9 @@ public:
 
     UI();
 
+    void initialize();
+    void shutdown();
+
     // Updates interactive UI state (clicks on speed controls, tool dock, tabs)
     void update(SimulationClock& clock, TileType& selectedBuildType,
                 bool& demolishMode, bool& busStopMode, bool& routeMode,
@@ -52,6 +55,11 @@ public:
     // Checks if the mouse cursor is currently over any interactive HUD window
     bool isMouseOverUI() const;
 
+    // High-quality text drawing helpers
+    void drawText(const char* text, float x, float y, float fontSize, Color color, bool bold = false) const;
+    void drawTextCentered(const char* text, float centerX, float centerY, float fontSize, Color color, bool bold = false) const;
+    Vector2 measureText(const char* text, float fontSize, bool bold = false) const;
+
 private:
     void drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
                        bool pollutionOverlay, bool landValueOverlay, bool housingOverlay,
@@ -72,6 +80,10 @@ private:
 
     DashboardTab currentTab = DashboardTab::Overview;
     bool mouseOverUI = false;
+
+    Font fontRegular = {};
+    Font fontBold = {};
+    bool fontsLoaded = false;
 };
 
 }  // namespace urbania

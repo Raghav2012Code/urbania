@@ -34,18 +34,12 @@ Color tilePreviewColor(TileType type)
 
 bool Game::initialize()
 {
-    const int screenWidth = 1920;
-    const int screenHeight = 1080;
-
-    InitWindow(screenWidth, screenHeight, "Urbania");
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(1280, 720, "Urbania");
     SetTargetFPS(60);
 
-    SetWindowPosition((GetMonitorWidth(0) - screenWidth) / 2,
-                      (GetMonitorHeight(0) - screenHeight) / 2);
-    RestoreWindow();
-    SetWindowFocused();
-
     textureManager.initialize();
+    ui.initialize();
 
     if (!simulation.initialize(world))
     {
@@ -127,6 +121,7 @@ void Game::draw()
 
 void Game::shutdown()
 {
+    ui.shutdown();
     textureManager.shutdown();
     simulation.shutdown();
     CloseWindow();
