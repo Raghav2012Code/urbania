@@ -222,6 +222,11 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     check(simulation.getRoadNetwork().getNodeCount() == nodesBefore, "T9 cleanup nodes back");
     check(simulation.getPopulation().getResidentsAt(HOME_X, HOME_Y) == 0,
           "T10 cleanup residents gone");
+    check(simulation.getEconomy().getMoney() >= 0 &&
+              Economy::getMaintenanceForTile(TileType::Road) == 2.0f &&
+              Economy::getMaintenanceForTile(TileType::Commercial) == 10.0f &&
+              Economy::RESIDENTIAL_TAX_PER_CITIZEN == 100.0f,
+          "T12 economy rates & non-negative money");
 }
 
 bool SelfTest::hasRun() const

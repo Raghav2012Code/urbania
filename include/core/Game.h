@@ -34,7 +34,6 @@ private:
     World world;
     urbania::Camera camera;
     urbania::Input input;
-    Economy economy;
     SimulationClock simulationClock;
     Simulation simulation;
     urbania::SelfTest selfTest;

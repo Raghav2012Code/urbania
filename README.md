@@ -138,14 +138,17 @@ Done:
 
 - Project setup, game loop, and window management
 - Tile grid, camera (pan/zoom), and mouse tile selection
-- Construction, demolition, and money
-- Simulation clock with pause and speeds
+- Construction, demolition, and money wallet
+- Simulation clock with pause and speeds (1x, 2x, 4x, 8x)
 - Simulation pipeline, population, citizens, employment
 - Road network with A* pathfinding
+- Citizen commute routes and visual movement
+- Vehicle traffic and road congestion slowdowns
+- Basic economy, daily citizen/job taxes, and tile maintenance
 
 Not yet implemented:
 
-- Citizen movement, traffic, and public transport
-- Income, taxes, and demand
-- Pollution and happiness
-- Final UI, art, and persistence
+- Public transport (buses, trains, stations)
+- Zoning demand curves (RCI demand meters)
+- Pollution and dynamic citizen happiness
+- Final UI, art textures, audio, and save/load persistence

@@ -178,6 +178,27 @@ push → confirm the remote matches. No phase starts with a dirty tree.
   on one representative route; debug shows `Vehicles` and
   `Active Vehicles`.
 
+## Phase 18 — Road capacity and congestion (`538ddae`)
+
+- `Congestion`: road tile vehicle counts, capacity of 5 vehicles per tile,
+  congestion ratio (vehicles / capacity), and non-linear speed multiplier
+  slowdown curve (`1 / (1 + (ratio)^2)`).
+- Congested road color overlay (transitioning towards red) and per-tile
+  inspection on hover.
+
+## Phase 19 — Basic economy and taxes (`08053ab`)
+
+- `Economy` (owned by `Simulation`): wallet management starting at
+  Rs. 100,000, safe spending with zero-clamp on deficit.
+- Simulation-time daily ledger: citizen tax (Rs. 100/day per active citizen),
+  workplace tax (Rs. 50/day per occupied commercial job, Rs. 75/day per
+  occupied industrial job), building maintenance costs (Road Rs. 2,
+  Residential Rs. 5, Commercial Rs. 10, Industrial Rs. 15, Park Rs. 5 per day).
+- Settlement once per simulation day (86,400 sim-seconds) using scaled
+  simulation time; pause halts ledger accumulation.
+- Real-time economy HUD displaying Money, Daily Net Income, Tax, and
+  Maintenance.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
