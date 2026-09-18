@@ -110,6 +110,11 @@ void Game::update(float deltaTime)
 {
     camera.update(deltaTime);
     input.update(camera);
+    handleSimulationInput();
+    // Real deltaTime flows into the simulation clock first; all future
+    // simulation systems must consume scaled simulation time from the
+    // clock instead of GetFrameTime() directly.
+    simulationClock.update(deltaTime);
     handleBuildInput();
 }
 
@@ -128,6 +133,38 @@ void Game::draw()
 void Game::shutdown()
 {
     CloseWindow();
+}
+
+void Game::handleSimulationInput()
+{
+    // Simulation speeds live on F1-F4 so build selection on 1-5 is untouched.
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        if (simulationClock.isPaused())
+        {
+            simulationClock.resume();
+        }
+        else
+        {
+            simulationClock.pause();
+        }
+    }
+    else if (IsKeyPressed(KEY_F1))
+    {
+        simulationClock.setTimeScale(SimulationClock::NORMAL_SPEED);
+    }
+    else if (IsKeyPressed(KEY_F2))
+    {
+        simulationClock.setTimeScale(SimulationClock::FAST_SPEED);
+    }
+    else if (IsKeyPressed(KEY_F3))
+    {
+        simulationClock.setTimeScale(SimulationClock::VERY_FAST_SPEED);
+    }
+    else if (IsKeyPressed(KEY_F4))
+    {
+        simulationClock.setTimeScale(SimulationClock::EXTREMELY_FAST_SPEED);
+    }
 }
 
 void Game::handleBuildInput()
@@ -289,5 +326,19 @@ void Game::drawDebugText()
     }
 
     DrawText(TextFormat("Money: %s", formatMoney(economy.getMoney()).c_str()), 10, 88, 20, DARKGRAY);
-    DrawText("Keys: 1-5 select, D demolish", 10, 114, 20, DARKGRAY);
+    DrawText(TextFormat("Day %d - %02d:%02d", simulationClock.getDay(), simulationClock.getHour(),
+                        simulationClock.getMinute()),
+             10, 114, 20, DARKGRAY);
+
+    if (simulationClock.isPaused())
+    {
+        DrawText("PAUSED", 10, 140, 20, { 200, 40, 40, 255 });
+    }
+    else
+    {
+        DrawText(TextFormat("Speed: %dx", static_cast<int>(simulationClock.getTimeScale())), 10, 140,
+                 20, DARKGRAY);
+    }
+
+    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 166, 20, DARKGRAY);
 }
