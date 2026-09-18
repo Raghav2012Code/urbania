@@ -285,6 +285,44 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
         check(routeOk, "T19 transit bus route creation, validation & deletion");
     }
 
+    // T20: Bus vehicle spawning, A* path generation, movement, and cleanup
+    {
+        const int roadA_X = ROAD_X0;
+        const int roadA_Y = ROAD_Y;
+        const int roadB_X = ROAD_X1;
+        const int roadB_Y = ROAD_Y;
+
+        simulation.getTransit().addBusStop(world, roadA_X, roadA_Y, economy);
+        simulation.getTransit().addBusStop(world, roadB_X, roadB_Y, economy);
+        const auto* stopA = simulation.getTransit().getBusStop(roadA_X, roadA_Y);
+        const auto* stopB = simulation.getTransit().getBusStop(roadB_X, roadB_Y);
+
+        bool busOk = (stopA != nullptr && stopB != nullptr);
+        if (busOk)
+        {
+            simulation.getTransit().createRoute(simulation.getRoadNetwork(), { stopA->id, stopB->id });
+            busOk = busOk && (simulation.getTransit().getBusCount() == 1);
+
+            const auto* bus = simulation.getTransit().getBuses().empty() ? nullptr : &simulation.getTransit().getBuses().front();
+            busOk = busOk && (bus != nullptr && bus->routeId >= 1);
+            busOk = busOk && (Bus::BUS_SPEED_TILES_PER_SECOND == 3.0f);
+
+            // Movement update advances bus along A* path
+            simulation.getTransit().update(0.5f, simulation.getRoadNetwork());
+            busOk = busOk && (bus != nullptr && bus->active);
+            busOk = busOk && (bus != nullptr && !bus->path.empty());
+
+            // Deleting route removes bus
+            simulation.getTransit().deleteLatestRoute();
+            busOk = busOk && (simulation.getTransit().getBusCount() == 0);
+
+            simulation.getTransit().removeBusStop(roadA_X, roadA_Y);
+            simulation.getTransit().removeBusStop(roadB_X, roadB_Y);
+        }
+
+        check(busOk, "T20 transit bus vehicle spawning, movement & cleanup");
+    }
+
     // T9: cleanup demolishes the test district; network returns.
     economy.tryDemolish(world.getTile(HOME_X, HOME_Y));
     economy.tryDemolish(world.getTile(WORK_X, WORK_Y));

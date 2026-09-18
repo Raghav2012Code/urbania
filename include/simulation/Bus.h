@@ -13,7 +13,8 @@ class Transit;
 // Follows an A* road path from stop to stop in sequence and loops indefinitely.
 // Simulation data and deterministic movement only; independent from raylib rendering.
 struct Bus {
-    static constexpr float DEFAULT_SPEED = 3.0f;  // Tiles per simulation second
+    static constexpr float BUS_SPEED_TILES_PER_SECOND = 3.0f;
+    static constexpr float DEFAULT_SPEED = BUS_SPEED_TILES_PER_SECOND;
 
     int id = 0;
     int routeId = 0;
