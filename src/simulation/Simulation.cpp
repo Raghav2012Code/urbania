@@ -18,6 +18,8 @@ bool Simulation::initialize(World& world)
     demand = Demand();
     demand.recalculate(world, population, employment);
     pollution = urbania::Pollution();
+    happiness = urbania::Happiness();
+    happiness.recalculate(world, population.getCitizenManager(), pollution);
     return true;
 }
 
@@ -42,8 +44,7 @@ void Simulation::update(float simulationDeltaTime)
     economy.update(*world, population, employment, simulationDeltaTime);
     demand.update(*world, population, employment, simulationDeltaTime);
     pollution.update(*world, simulationDeltaTime);
-    // Future city systems run here on simulation time:
-    // happiness.update(simulationDeltaTime);
+    happiness.update(*world, population.getCitizenManager(), pollution, simulationDeltaTime);
 }
 
 void Simulation::shutdown()
@@ -120,5 +121,16 @@ urbania::Pollution& Simulation::getPollution()
 {
     return pollution;
 }
+
+const urbania::Happiness& Simulation::getHappiness() const
+{
+    return happiness;
+}
+
+urbania::Happiness& Simulation::getHappiness()
+{
+    return happiness;
+}
+
 
 

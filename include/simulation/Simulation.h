@@ -6,6 +6,7 @@
 #include "simulation/Demand.h"
 #include "simulation/Economy.h"
 #include "simulation/Employment.h"
+#include "simulation/Happiness.h"
 #include "simulation/Pollution.h"
 #include "simulation/Population.h"
 #include "simulation/RoadNetwork.h"
@@ -39,6 +40,8 @@ public:
     Demand& getDemand();
     const urbania::Pollution& getPollution() const;
     urbania::Pollution& getPollution();
+    const urbania::Happiness& getHappiness() const;
+    urbania::Happiness& getHappiness();
 
 private:
     World* world = nullptr;
@@ -52,6 +55,7 @@ private:
     Economy economy;
     Demand demand;
     urbania::Pollution pollution;
+    urbania::Happiness happiness;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.

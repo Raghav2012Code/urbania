@@ -4,6 +4,7 @@
 #include "simulation/Congestion.h"
 #include "simulation/Demand.h"
 #include "simulation/Economy.h"
+#include "simulation/Happiness.h"
 #include "simulation/Pathfinder.h"
 #include "simulation/Pollution.h"
 #include "simulation/Simulation.h"
@@ -247,6 +248,14 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
               Pollution::PARK_POLLUTION_REDUCTION_PER_HOUR == 4.0f &&
               Pollution::NATURAL_POLLUTION_DECAY_PER_HOUR == 1.0f,
           "T14 pollution bounds & rates");
+
+    const float avgH = simulation.getHappiness().getAverageHappiness();
+    const bool happyBounds =
+        avgH >= Happiness::MIN_HAPPINESS && avgH <= Happiness::MAX_HAPPINESS;
+    check(happyBounds && Happiness::BASE_HAPPINESS == 50.0f &&
+              Happiness::EMPLOYED_BONUS == 15.0f && Happiness::UNEMPLOYED_PENALTY == -15.0f &&
+              Happiness::PARK_BONUS == 15.0f,
+          "T15 happiness bounds & rates");
 }
 
 bool SelfTest::hasRun() const

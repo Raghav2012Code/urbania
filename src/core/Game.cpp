@@ -656,6 +656,9 @@ void Game::drawDebugText()
     DrawText(TextFormat("Population: %d", simulation.getPopulation().getTotalPopulation()), 10, y,
              20, DARKGRAY);
     y += step;
+    DrawText(TextFormat("Happiness: %.1f", simulation.getHappiness().getAverageHappiness()), 10, y,
+             20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Housing: %d / %d", simulation.getPopulation().getTotalPopulation(),
                         simulation.getPopulation().getTotalHousingCapacity()),
              10, y, 20, DARKGRAY);
@@ -715,8 +718,10 @@ void Game::drawDebugText()
 
     if (representative != nullptr)
     {
-        DrawText(TextFormat("Citizen %d: %d/%d", representative->id, representative->pathIndex,
-                             static_cast<int>(representative->commutePath.size())),
+        DrawText(TextFormat("Citizen %d: %d/%d (Happy: %.1f)", representative->id,
+                            representative->pathIndex,
+                            static_cast<int>(representative->commutePath.size()),
+                            representative->happiness),
                  10, y, 20, DARKGRAY);
     }
     else

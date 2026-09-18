@@ -147,9 +147,9 @@ Done:
 - Basic economy, daily citizen/job taxes, and tile maintenance
 - City demand indicators (Residential, Commercial, Industrial)
 - Pollution simulation (Industrial emissions, 4-cardinal diffusion, park filtering, and decay)
+- Citizen happiness system (Employment, Housing, Parks, Commutes, and Pollution)
 
 Not yet implemented:
 
 - Public transport (buses, trains, stations)
-- Dynamic citizen happiness
 - Final UI, art textures, audio, and save/load persistence

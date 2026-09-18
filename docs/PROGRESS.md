@@ -221,6 +221,18 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - F5 toggles semi-transparent smog overlay; HUD displays average, maximum, and
   hovered tile pollution values.
 
+## Phase 22 — Citizen happiness system
+
+- `Happiness` (owned by `Simulation`): authoritative calculation of individual
+  citizen happiness clamped between [0.0, 100.0] starting from a 50.0 base.
+- Multi-factor deterministic modifiers: Employment (+15 / -15), Housing (+5
+  valid / -20 missing), Parks (+15 within radius 5 of home, no stacking),
+  Pollution (linear penalty up to -30 at 100 pollution), and Commute conditions
+  (-10 if unroutable, distance penalty for long routes).
+- Updates once per simulation hour (every 3,600 sim-seconds) on scaled time.
+- HUD displays city-wide average happiness and individual representative citizen
+  happiness metrics.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
