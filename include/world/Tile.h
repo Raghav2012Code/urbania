@@ -1,7 +1,12 @@
 #pragma once
 
 enum class TileType {
-    Grass
+    Grass,
+    Road,
+    Residential,
+    Commercial,
+    Industrial,
+    Park
 };
 
 struct Tile {
