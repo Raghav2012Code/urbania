@@ -21,25 +21,26 @@ void Population::update(World& world, float simulationDeltaTime)
             home.growthProgress +=
                 simulationDeltaTime / SIM_SECONDS_PER_HOUR * RESIDENTS_PER_SIM_HOUR;
 
-            while (home.growthProgress >= 1.0f && home.residents < home.capacity)
+            while (home.growthProgress >= 1.0f &&
+                   countResidentsAt(entry.first.first, entry.first.second) < home.capacity)
             {
-                home.residents += 1;
                 home.growthProgress -= 1.0f;
+                citizens.createCitizen(
+                    { entry.first.first, entry.first.second, true });
             }
 
             // A full home holds no pending growth.
-            if (home.residents >= home.capacity)
+            if (countResidentsAt(entry.first.first, entry.first.second) >= home.capacity)
             {
                 home.growthProgress = 0.0f;
             }
         }
     }
 
-    totalPopulation = 0;
+    totalPopulation = citizens.getCitizenCount();
     totalHousingCapacity = 0;
     for (const auto& entry : homes)
     {
-        totalPopulation += entry.second.residents;
         totalHousingCapacity += entry.second.capacity;
     }
 }
@@ -56,23 +57,42 @@ int Population::getTotalHousingCapacity() const
 
 int Population::getResidentsAt(int x, int y) const
 {
-    const auto it = homes.find({ x, y });
-    if (it == homes.end())
+    if (homes.find({ x, y }) == homes.end())
     {
         return 0;
     }
-    return it->second.residents;
+    return countResidentsAt(x, y);
+}
+
+const urbania::CitizenManager& Population::getCitizens() const
+{
+    return citizens;
+}
+
+int Population::countResidentsAt(int x, int y) const
+{
+    int count = 0;
+    for (const urbania::Citizen& citizen : citizens.getCitizens())
+    {
+        if (citizen.home.valid && citizen.home.x == x && citizen.home.y == y)
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 void Population::syncWithWorld(const World& world)
 {
-    // Drop data for tiles that are no longer Residential (demolished or
-    // replaced); their residents leave with them.
+    // Drop homes (and their citizens) for tiles that are no longer
+    // Residential. No dangling residents: removal is by home tile.
     for (auto it = homes.begin(); it != homes.end();)
     {
         const Tile& tile = world.getTile(it->first.first, it->first.second);
         if (tile.type != TileType::Residential)
         {
+            citizens.removeCitizensAt(
+                { it->first.first, it->first.second, true });
             it = homes.erase(it);
         }
         else
@@ -81,7 +101,7 @@ void Population::syncWithWorld(const World& world)
         }
     }
 
-    // Register new Residential tiles with empty homes.
+    // Register new Residential tiles as empty homes.
     for (int y = 0; y < world.getHeight(); ++y)
     {
         for (int x = 0; x < world.getWidth(); ++x)
@@ -89,7 +109,7 @@ void Population::syncWithWorld(const World& world)
             if (world.getTile(x, y).type == TileType::Residential &&
                 homes.find({ x, y }) == homes.end())
             {
-                homes[{ x, y }] = { RESIDENTS_PER_RESIDENTIAL_TILE, 0, 0.0f };
+                homes[{ x, y }] = { RESIDENTS_PER_RESIDENTIAL_TILE, 0.0f };
             }
         }
     }

@@ -1,14 +1,9 @@
 #pragma once
 
 #include "core/Camera.h"
+#include "world/Tile.h"
 
 namespace urbania {
-
-struct TileCoordinate {
-    int x = -1;
-    int y = -1;
-    bool valid = false;
-};
 
 class Input {
 public:
