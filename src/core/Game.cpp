@@ -1,5 +1,6 @@
 #include "core/Game.h"
 
+#include <algorithm>
 #include <string>
 
 #include "raylib.h"
@@ -22,6 +23,8 @@ constexpr Color DEMOLISH_FILL = { 220, 50, 50, 110 };
 constexpr Color PATH_TEST_OUTLINE = { 30, 100, 255, 255 };
 constexpr Color PATH_COMMUTE_DOT = { 150, 50, 200, 255 };
 constexpr Color CITIZEN_DOT = { 20, 60, 160, 255 };
+constexpr Color VEHICLE_FILL = { 180, 30, 30, 255 };
+constexpr Color PATH_VEHICLE_OUTLINE = { 255, 140, 0, 255 };
 constexpr Color UNAVAILABLE_BORDER = { 150, 150, 150, 255 };
 
 Color tileColor(TileType type)
@@ -148,6 +151,7 @@ void Game::draw()
     drawPathTest();
     drawCommutePath();
     drawCitizens();
+    drawVehicles();
     camera.end();
 
     drawDebugText();
@@ -435,6 +439,47 @@ void Game::drawCitizens()
     }
 }
 
+void Game::drawVehicles()
+{
+    // Temporary vehicle visual: small rectangles at interpolated
+    // positions, plus outlines along one representative route.
+    const int tileSize = world.getTileSize();
+    const float halfTile = static_cast<float>(tileSize) / 2.0f;
+
+    for (const urbania::TileCoordinate& step : simulation.getTraffic().getRepresentativeRoute())
+    {
+        DrawRectangleLinesEx({ static_cast<float>(step.x * tileSize),
+                               static_cast<float>(step.y * tileSize),
+                               static_cast<float>(tileSize), static_cast<float>(tileSize) },
+                             2.0f, PATH_VEHICLE_OUTLINE);
+    }
+
+    for (const urbania::Vehicle& vehicle : simulation.getTraffic().getVehicles())
+    {
+        if (!vehicle.active || vehicle.path.empty())
+        {
+            continue;
+        }
+
+        const int last = static_cast<int>(vehicle.path.size()) - 1;
+        const int fromIndex = std::clamp(vehicle.pathIndex, 0, last);
+        const int toIndex = std::min(fromIndex + 1, last);
+        const urbania::TileCoordinate& from = vehicle.path[fromIndex];
+        const urbania::TileCoordinate& to = vehicle.path[toIndex];
+
+        const float x = (static_cast<float>(from.x) +
+                         (static_cast<float>(to.x - from.x)) * vehicle.movementProgress) *
+                            static_cast<float>(tileSize) +
+                        halfTile;
+        const float y = (static_cast<float>(from.y) +
+                         (static_cast<float>(to.y - from.y)) * vehicle.movementProgress) *
+                            static_cast<float>(tileSize) +
+                        halfTile;
+
+        DrawRectangle(static_cast<int>(x) - 5, static_cast<int>(y) - 5, 10, 10, VEHICLE_FILL);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -536,6 +581,11 @@ void Game::drawDebugText()
         DrawText("Citizen: --", 10, 478, 20, DARKGRAY);
     }
 
+    DrawText(TextFormat("Vehicles: %d", simulation.getTraffic().getVehicleCount()), 10, 504,
+             20, DARKGRAY);
+    DrawText(TextFormat("Active Vehicles: %d", simulation.getTraffic().getActiveVehicleCount()),
+             10, 530, 20, DARKGRAY);
+
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
     {
@@ -543,11 +593,11 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 504, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 530, 20, DARKGRAY);
+                 10, 556, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 582, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 504, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 556, 20, DARKGRAY);
     }
 }

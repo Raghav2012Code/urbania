@@ -5,6 +5,7 @@
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
 #include "simulation/RoadNetwork.h"
+#include "simulation/Traffic.h"
 
 class World;
 
@@ -26,6 +27,7 @@ public:
     urbania::RoadNetwork& getRoadNetwork();
     const urbania::CommuteSystem& getCommuteSystem() const;
     const urbania::CitizenMovement& getCitizenMovement() const;
+    const urbania::Traffic& getTraffic() const;
 
 private:
     World* world = nullptr;
@@ -34,6 +36,7 @@ private:
     urbania::RoadNetwork roadNetwork;
     urbania::CommuteSystem commuteSystem;
     urbania::CitizenMovement citizenMovement;
+    urbania::Traffic traffic;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.

@@ -30,6 +30,8 @@ add_executable(Urbania
     src/simulation/Pathfinder.cpp
     src/simulation/CommuteSystem.cpp
     src/simulation/CitizenMovement.cpp
+    src/simulation/Vehicle.cpp
+    src/simulation/Traffic.cpp
 )
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
