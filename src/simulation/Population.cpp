@@ -47,7 +47,7 @@ void Population::update(World& world, float simulationDeltaTime)
 
 int Population::getTotalPopulation() const
 {
-    return totalPopulation;
+    return citizens.getCitizenCount();
 }
 
 int Population::getTotalHousingCapacity() const
