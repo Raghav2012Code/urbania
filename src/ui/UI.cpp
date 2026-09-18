@@ -673,6 +673,25 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
         }
     }
 
+    for (const auto& bus : sim.getTransit().getBuses())
+    {
+        if (bus.active && !bus.path.empty() && bus.pathIndex >= 0 &&
+            bus.pathIndex < static_cast<int>(bus.path.size()))
+        {
+            const auto& bTile = bus.path[bus.pathIndex];
+            if (bTile.x == hovered.x && bTile.y == hovered.y)
+            {
+                const auto* r = sim.getTransit().getRoute(bus.routeId);
+                const int total = (r != nullptr) ? static_cast<int>(r->stopIds.size()) : 0;
+                DrawText(TextFormat("Bus #%d • Route #%d (Stop %d/%d)", bus.id, bus.routeId,
+                                    bus.currentStopIndex + 1, total),
+                         x + 12, cy, 11, Color{ 255, 215, 0, 255 });
+                cy += 18;
+                break;
+            }
+        }
+    }
+
     const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
     if (p > 0.01f)
     {
