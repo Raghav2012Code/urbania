@@ -24,6 +24,7 @@ private:
     void drawWorld();
     void drawHighlight();
     void drawPathTest();
+    void drawCommutePath();
     void drawDebugText();
 
     World world;

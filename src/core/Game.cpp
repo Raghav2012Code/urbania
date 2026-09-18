@@ -20,6 +20,7 @@ constexpr Color PREVIEW_FILL = { 255, 255, 255, 110 };
 constexpr Color BLOCKED_BORDER = { 220, 50, 50, 255 };
 constexpr Color DEMOLISH_FILL = { 220, 50, 50, 110 };
 constexpr Color PATH_TEST_OUTLINE = { 30, 100, 255, 255 };
+constexpr Color PATH_COMMUTE_DOT = { 150, 50, 200, 255 };
 constexpr Color UNAVAILABLE_BORDER = { 150, 150, 150, 255 };
 
 Color tileColor(TileType type)
@@ -144,6 +145,7 @@ void Game::draw()
     drawWorld();
     drawHighlight();
     drawPathTest();
+    drawCommutePath();
     camera.end();
 
     drawDebugText();
@@ -381,6 +383,18 @@ void Game::drawPathTest()
     }
 }
 
+void Game::drawCommutePath()
+{
+    // Temporary debug visual: small dots along the representative
+    // commute route so it stays readable under the tile outlines.
+    const int tileSize = world.getTileSize();
+    for (const urbania::TileCoordinate& step : simulation.getCommuteSystem().getSampleRoute())
+    {
+        DrawCircle(step.x * tileSize + tileSize / 2, step.y * tileSize + tileSize / 2, 5.0f,
+                   PATH_COMMUTE_DOT);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -448,6 +462,14 @@ void Game::drawDebugText()
                  20, DARKGRAY);
     }
 
+    DrawText(TextFormat("Commute Routes: %d", simulation.getCommuteSystem().getRoutedCitizens()),
+             10, 374, 20, DARKGRAY);
+    DrawText(TextFormat("No Route: %d", simulation.getCommuteSystem().getUnroutedCitizens()), 10,
+             400, 20, DARKGRAY);
+    DrawText(TextFormat("Route Length: %d",
+                        static_cast<int>(simulation.getCommuteSystem().getSampleRoute().size())),
+             10, 426, 20, DARKGRAY);
+
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
     {
@@ -455,11 +477,11 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 374, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 400, 20, DARKGRAY);
+                 10, 452, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 478, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 374, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 452, 20, DARKGRAY);
     }
 }

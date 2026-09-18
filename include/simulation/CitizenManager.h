@@ -23,6 +23,7 @@ public:
     Citizen* getCitizen(int id);
     const Citizen* getCitizen(int id) const;
     const std::vector<Citizen>& getCitizens() const;
+    std::vector<Citizen>& getCitizens();
     int getCitizenCount() const;
 
 private:

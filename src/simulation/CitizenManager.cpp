@@ -80,6 +80,11 @@ const std::vector<Citizen>& CitizenManager::getCitizens() const
     return citizens;
 }
 
+std::vector<Citizen>& CitizenManager::getCitizens()
+{
+    return citizens;
+}
+
 int CitizenManager::getCitizenCount() const
 {
     return static_cast<int>(citizens.size());

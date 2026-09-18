@@ -10,6 +10,7 @@ bool Simulation::initialize(World& world)
     employment = urbania::Employment();
     roadNetwork = urbania::RoadNetwork();
     roadNetwork.rebuild(world);
+    commuteSystem = urbania::CommuteSystem();
     return true;
 }
 
@@ -24,6 +25,7 @@ void Simulation::update(float simulationDeltaTime)
 
     population.update(*world, simulationDeltaTime);
     employment.update(*world, population.getCitizenManager(), simulationDeltaTime);
+    commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     // Future city systems run here on simulation time:
     // economy.update(simulationDeltaTime);
     // traffic.update(simulationDeltaTime);
@@ -54,4 +56,9 @@ const urbania::Employment& Simulation::getEmployment() const
 urbania::RoadNetwork& Simulation::getRoadNetwork()
 {
     return roadNetwork;
+}
+
+const urbania::CommuteSystem& Simulation::getCommuteSystem() const
+{
+    return commuteSystem;
 }

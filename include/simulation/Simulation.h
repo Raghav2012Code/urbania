@@ -1,5 +1,6 @@
 #pragma once
 
+#include "simulation/CommuteSystem.h"
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
 #include "simulation/RoadNetwork.h"
@@ -22,12 +23,14 @@ public:
     const Population& getPopulation() const;
     const urbania::Employment& getEmployment() const;
     urbania::RoadNetwork& getRoadNetwork();
+    const urbania::CommuteSystem& getCommuteSystem() const;
 
 private:
     World* world = nullptr;
     Population population;
     urbania::Employment employment;
     urbania::RoadNetwork roadNetwork;
+    urbania::CommuteSystem commuteSystem;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.
