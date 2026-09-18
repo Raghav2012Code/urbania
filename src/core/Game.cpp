@@ -221,13 +221,22 @@ void Game::handleBuildInput()
     }
 
     Tile& tile = world.getTile(hovered.x, hovered.y);
+    const TileType oldType = tile.type;
+
+    bool changed = false;
     if (demolishMode)
     {
-        economy.tryDemolish(tile);
+        changed = economy.tryDemolish(tile);
     }
     else
     {
-        economy.tryBuild(tile, selectedBuildType);
+        changed = economy.tryBuild(tile, selectedBuildType);
+    }
+
+    // Refresh the road graph only when a tile changes to or from Road.
+    if (changed && (oldType == TileType::Road || tile.type == TileType::Road))
+    {
+        simulation.getRoadNetwork().rebuild(world);
     }
 }
 
@@ -364,5 +373,21 @@ void Game::drawDebugText()
              10, 270, 20, DARKGRAY);
     DrawText(TextFormat("Unemployed: %d", simulation.getEmployment().getUnemployedCitizens()), 10,
              296, 20, DARKGRAY);
-    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 322, 20, DARKGRAY);
+    DrawText(TextFormat("Road Nodes: %d", simulation.getRoadNetwork().getNodeCount()), 10, 322, 20,
+             DARKGRAY);
+
+    if (hovered.valid &&
+        simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
+    {
+        DrawText(TextFormat("Road Neighbors: %d",
+                            static_cast<int>(simulation.getRoadNetwork()
+                                                 .getNeighbors(hovered)
+                                                 .size())),
+                 10, 348, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 374, 20, DARKGRAY);
+    }
+    else
+    {
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 348, 20, DARKGRAY);
+    }
 }

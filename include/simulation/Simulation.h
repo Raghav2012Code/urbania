@@ -2,6 +2,7 @@
 
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
+#include "simulation/RoadNetwork.h"
 
 class World;
 
@@ -20,11 +21,13 @@ public:
     float getElapsedSimulationSeconds() const;
     const Population& getPopulation() const;
     const urbania::Employment& getEmployment() const;
+    urbania::RoadNetwork& getRoadNetwork();
 
 private:
     World* world = nullptr;
     Population population;
     urbania::Employment employment;
+    urbania::RoadNetwork roadNetwork;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.

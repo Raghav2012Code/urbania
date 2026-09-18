@@ -8,6 +8,8 @@ bool Simulation::initialize(World& world)
     elapsedSimulationSeconds = 0.0f;
     population = Population();
     employment = urbania::Employment();
+    roadNetwork = urbania::RoadNetwork();
+    roadNetwork.rebuild(world);
     return true;
 }
 
@@ -47,4 +49,9 @@ const Population& Simulation::getPopulation() const
 const urbania::Employment& Simulation::getEmployment() const
 {
     return employment;
+}
+
+urbania::RoadNetwork& Simulation::getRoadNetwork()
+{
+    return roadNetwork;
 }

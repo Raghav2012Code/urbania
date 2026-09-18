@@ -26,6 +26,7 @@ add_executable(Urbania
     src/simulation/Citizen.cpp
     src/simulation/CitizenManager.cpp
     src/simulation/Employment.cpp
+    src/simulation/RoadNetwork.cpp
 )
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
