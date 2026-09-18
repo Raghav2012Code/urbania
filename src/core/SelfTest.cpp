@@ -5,6 +5,7 @@
 #include "simulation/Demand.h"
 #include "simulation/Economy.h"
 #include "simulation/Happiness.h"
+#include "simulation/LandValue.h"
 #include "simulation/Pathfinder.h"
 #include "simulation/Pollution.h"
 #include "simulation/Simulation.h"
@@ -256,6 +257,14 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
               Happiness::EMPLOYED_BONUS == 15.0f && Happiness::UNEMPLOYED_PENALTY == -15.0f &&
               Happiness::PARK_BONUS == 15.0f,
           "T15 happiness bounds & rates");
+
+    const float avgLV = simulation.getLandValue().getAverageLandValue();
+    const bool lvBounds =
+        avgLV >= LandValue::MIN_LAND_VALUE && avgLV <= LandValue::MAX_LAND_VALUE;
+    check(lvBounds && LandValue::BASE_LAND_VALUE == 50.0f &&
+              LandValue::PARK_LAND_VALUE_BONUS == 15.0f &&
+              LandValue::POLLUTION_PENALTY_FACTOR == 0.35f,
+          "T16 land value bounds & rates");
 }
 
 bool SelfTest::hasRun() const

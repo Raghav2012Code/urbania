@@ -233,6 +233,19 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - HUD displays city-wide average happiness and individual representative citizen
   happiness metrics.
 
+## Phase 23 — Land value system
+
+- `LandValue` (owned by `Simulation`): calculates per-tile desirability score in range
+  [0.0, 100.0] stored in a coordinate-keyed map (`TileCoordinate` -> float), starting
+  from a 50.0 neutral baseline.
+- Multi-factor modifiers: Parks bonus (+15.0 within radius 5), linear Pollution
+  penalty (-0.35 * pollution, up to -35.0), and nearby road Congestion penalty
+  (up to -15.0 within radius 3).
+- Calculations update once per simulation hour (every 3,600 sim-seconds) on scaled time;
+  pause halts updates.
+- F6 toggles color overlay (green for high land value, red/dark for low); HUD displays
+  city-wide average land value and hovered tile land value.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
@@ -242,3 +255,4 @@ live in-game checks driven through the actual window (build, demolish,
 pause, speeds, screenshots with pixel checks), a scoped-diff review,
 and a commit + push with remote-HEAD confirmation. Simulation code
 stays raylib-free throughout, proven by grep on every phase.
+

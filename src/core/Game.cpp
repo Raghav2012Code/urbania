@@ -163,6 +163,10 @@ void Game::draw()
     {
         drawPollutionOverlay();
     }
+    if (landValueOverlay)
+    {
+        drawLandValueOverlay();
+    }
     drawHighlight();
     drawPathTest();
     drawCommutePath();
@@ -213,6 +217,10 @@ void Game::handleSimulationInput()
     else if (IsKeyPressed(KEY_F5))
     {
         pollutionOverlay = !pollutionOverlay;
+    }
+    else if (IsKeyPressed(KEY_F6))
+    {
+        landValueOverlay = !landValueOverlay;
     }
     else if (IsKeyPressed(KEY_F9))
     {
@@ -535,6 +543,33 @@ void Game::drawPollutionOverlay()
     }
 }
 
+void Game::drawLandValueOverlay()
+{
+    const int tileSize = world.getTileSize();
+    for (const auto& entry : simulation.getLandValue().getLandValueGrid())
+    {
+        const urbania::TileCoordinate& coord = entry.first;
+        const float val = entry.second;
+
+        // Visual overlay: higher land value is brighter green;
+        // lower land value is darker/reddish tint.
+        Color tint;
+        if (val >= 50.0f)
+        {
+            const unsigned char alpha = static_cast<unsigned char>(
+                std::clamp((val - 50.0f) * 3.0f, 10.0f, 160.0f));
+            tint = { 50, 220, 80, alpha };
+        }
+        else
+        {
+            const unsigned char alpha = static_cast<unsigned char>(
+                std::clamp((50.0f - val) * 3.0f, 10.0f, 160.0f));
+            tint = { 200, 60, 50, alpha };
+        }
+        DrawRectangle(coord.x * tileSize, coord.y * tileSize, tileSize, tileSize, tint);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -544,6 +579,10 @@ void Game::drawDebugText()
     if (hovered.valid)
     {
         DrawText(TextFormat("Tile: (%d, %d)", hovered.x, hovered.y), 10, y, 20, DARKGRAY);
+        y += step;
+        DrawText(TextFormat("Land Value: %.1f",
+                            simulation.getLandValue().getLandValue(hovered.x, hovered.y)),
+                 10, y, 20, DARKGRAY);
         y += step;
         if (pollutionOverlay)
         {
@@ -633,6 +672,16 @@ void Game::drawDebugText()
                  10, y, 20, DARKGRAY);
         y += step;
     }
+
+    if (landValueOverlay)
+    {
+        DrawText("Land Value Overlay (F6)", 10, y, 20, { 50, 180, 80, 255 });
+        y += step;
+    }
+    DrawText(TextFormat("Average Land Value: %.1f",
+                        simulation.getLandValue().getAverageLandValue()),
+             10, y, 20, DARKGRAY);
+    y += step;
 
     DrawText(TextFormat("Day %d - %02d:%02d", simulationClock.getDay(), simulationClock.getHour(),
                         simulationClock.getMinute()),

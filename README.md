@@ -68,6 +68,8 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | `D`           | Toggle demolition mode                              |
 | `Space`       | Pause / resume the simulation                       |
 | `F1`–`F4`     | Simulation speed: 1x, 2x, 4x, 8x                    |
+| `F5`          | Toggle pollution overlay                            |
+| `F6`          | Toggle land value overlay                           |
 | `F9`          | Run the development self-test (builds test tiles)   |
 
 ## Gameplay systems
@@ -148,6 +150,7 @@ Done:
 - City demand indicators (Residential, Commercial, Industrial)
 - Pollution simulation (Industrial emissions, 4-cardinal diffusion, park filtering, and decay)
 - Citizen happiness system (Employment, Housing, Parks, Commutes, and Pollution)
+- Land value simulation (Tile desirability based on parks, pollution, and congestion)
 
 Not yet implemented:
 
