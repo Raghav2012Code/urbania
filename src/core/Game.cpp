@@ -7,6 +7,8 @@ namespace {
 
 constexpr Color GRASS_FILL = { 126, 217, 87, 255 };
 constexpr Color GRID_LINE = { 0, 0, 0, 30 };
+constexpr Color HIGHLIGHT_FILL = { 255, 255, 255, 80 };
+constexpr Color HIGHLIGHT_BORDER = { 255, 203, 5, 255 };
 
 }  // namespace
 
@@ -24,6 +26,7 @@ bool Game::initialize()
 void Game::update(float deltaTime)
 {
     camera.update(deltaTime);
+    input.update(camera);
 }
 
 void Game::draw()
@@ -32,7 +35,10 @@ void Game::draw()
 
     camera.begin();
     drawWorld();
+    drawHighlight();
     camera.end();
+
+    drawDebugText();
 }
 
 void Game::shutdown()
@@ -71,5 +77,37 @@ void Game::drawWorld()
     for (int y = 0; y <= world.getHeight(); ++y)
     {
         DrawLine(0, y * tileSize, gridWidth, y * tileSize, GRID_LINE);
+    }
+}
+
+void Game::drawHighlight()
+{
+    const urbania::TileCoordinate hovered = input.hovered();
+    if (!hovered.valid)
+    {
+        return;
+    }
+
+    const int tileSize = world.getTileSize();
+    const int px = hovered.x * tileSize;
+    const int py = hovered.y * tileSize;
+
+    DrawRectangle(px, py, tileSize, tileSize, HIGHLIGHT_FILL);
+    DrawRectangleLinesEx({ static_cast<float>(px), static_cast<float>(py),
+                           static_cast<float>(tileSize), static_cast<float>(tileSize) },
+                         2.0f, HIGHLIGHT_BORDER);
+}
+
+void Game::drawDebugText()
+{
+    const urbania::TileCoordinate hovered = input.hovered();
+
+    if (hovered.valid)
+    {
+        DrawText(TextFormat("Tile: (%d, %d)", hovered.x, hovered.y), 10, 10, 20, DARKGRAY);
+    }
+    else
+    {
+        DrawText("Tile: Outside world", 10, 10, 20, DARKGRAY);
     }
 }
