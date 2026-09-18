@@ -69,6 +69,11 @@ const urbania::CitizenManager& Population::getCitizens() const
     return citizens;
 }
 
+urbania::CitizenManager& Population::getCitizenManager()
+{
+    return citizens;
+}
+
 int Population::countResidentsAt(int x, int y) const
 {
     int count = 0;

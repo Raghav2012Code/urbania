@@ -7,6 +7,7 @@ bool Simulation::initialize(World& world)
     this->world = &world;
     elapsedSimulationSeconds = 0.0f;
     population = Population();
+    employment = urbania::Employment();
     return true;
 }
 
@@ -20,6 +21,7 @@ void Simulation::update(float simulationDeltaTime)
     elapsedSimulationSeconds += simulationDeltaTime;
 
     population.update(*world, simulationDeltaTime);
+    employment.update(*world, population.getCitizenManager(), simulationDeltaTime);
     // Future city systems run here on simulation time:
     // economy.update(simulationDeltaTime);
     // traffic.update(simulationDeltaTime);
@@ -40,4 +42,9 @@ float Simulation::getElapsedSimulationSeconds() const
 const Population& Simulation::getPopulation() const
 {
     return population;
+}
+
+const urbania::Employment& Simulation::getEmployment() const
+{
+    return employment;
 }

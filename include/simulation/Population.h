@@ -34,6 +34,7 @@ public:
     int getTotalHousingCapacity() const;
     int getResidentsAt(int x, int y) const;
     const urbania::CitizenManager& getCitizens() const;
+    urbania::CitizenManager& getCitizenManager();
 
 private:
     void syncWithWorld(const World& world);

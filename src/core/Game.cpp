@@ -356,5 +356,13 @@ void Game::drawDebugText()
     DrawText(TextFormat("Housing: %d / %d", simulation.getPopulation().getTotalPopulation(),
                         simulation.getPopulation().getTotalHousingCapacity()),
              10, 218, 20, DARKGRAY);
-    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 244, 20, DARKGRAY);
+    DrawText(TextFormat("Jobs: %d / %d", simulation.getEmployment().getOccupiedJobs(),
+                        simulation.getEmployment().getTotalJobs()),
+             10, 244, 20, DARKGRAY);
+    DrawText(TextFormat("Employment: %d / %d", simulation.getEmployment().getEmployedCitizens(),
+                        simulation.getPopulation().getTotalPopulation()),
+             10, 270, 20, DARKGRAY);
+    DrawText(TextFormat("Unemployed: %d", simulation.getEmployment().getUnemployedCitizens()), 10,
+             296, 20, DARKGRAY);
+    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 322, 20, DARKGRAY);
 }

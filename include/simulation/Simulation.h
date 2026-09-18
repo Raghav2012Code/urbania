@@ -1,5 +1,6 @@
 #pragma once
 
+#include "simulation/Employment.h"
 #include "simulation/Population.h"
 
 class World;
@@ -18,10 +19,12 @@ public:
 
     float getElapsedSimulationSeconds() const;
     const Population& getPopulation() const;
+    const urbania::Employment& getEmployment() const;
 
 private:
     World* world = nullptr;
     Population population;
+    urbania::Employment employment;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.
