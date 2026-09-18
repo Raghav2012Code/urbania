@@ -166,7 +166,7 @@ void UI::draw(const World& world, const Simulation& sim,
     drawTopRibbon(sim, clock, pollutionOverlay, landValueOverlay, housingOverlay,
                   showDashboard, showSelfTestModal);
     drawDemandMeters(sim);
-    drawBottomDock(selectedBuildType, demolishMode, busStopMode, routeMode);
+    drawBottomDock(sim, selectedBuildType, demolishMode, busStopMode, routeMode);
 
     if (showDashboard)
     {
@@ -179,8 +179,9 @@ void UI::draw(const World& world, const Simulation& sim,
     }
 
     drawOverlayLegends(pollutionOverlay, landValueOverlay, housingOverlay);
-    drawRouteBanner(routeMode, currentRouteStops);
-    drawToast(toastMessage, toastTimer, routeMode);
+    const bool hasBanner = demolishMode || busStopMode || routeMode;
+    drawModeBanners(demolishMode, busStopMode, routeMode, currentRouteStops);
+    drawToast(toastMessage, toastTimer, hasBanner);
 
     if (showSelfTestModal)
     {
@@ -363,8 +364,8 @@ void UI::drawDemandMeters(const Simulation& sim)
     DrawText(TextFormat("%+d", iDem), iX + (iDem >= 0 ? 3 : 1), (iFrac >= 0 ? baseY - iH - 13 : baseY + iH + 2), 10, Color{ 255, 230, 210, 255 });
 }
 
-void UI::drawBottomDock(TileType selectedBuildType, bool demolishMode,
-                        bool busStopMode, bool routeMode)
+void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
+                        bool demolishMode, bool busStopMode, bool routeMode)
 {
     const int sw = GetScreenWidth();
     const int sh = GetScreenHeight();
@@ -384,25 +385,44 @@ void UI::drawBottomDock(TileType selectedBuildType, bool demolishMode,
         const char* key;
         const char* name;
         const char* cost;
+        const char* desc;
         Color swatch;
         bool active;
+        bool affordable;
     };
 
     const ToolItem tools[8] = {
-        { "[1]", "Road", "₹100", Color{ 130, 135, 145, 255 }, !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Road },
-        { "[2]", "Resi", "₹2,000", Color{ 70, 130, 220, 255 }, !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Residential },
-        { "[3]", "Comm", "₹5,000", Color{ 240, 160, 40, 255 }, !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Commercial },
-        { "[4]", "Ind", "₹10,000", Color{ 175, 75, 75, 255 }, !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Industrial },
-        { "[5]", "Park", "₹1,000", Color{ 35, 140, 60, 255 }, !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Park },
-        { "[B]", "Bus Stop", "₹500", Color{ 255, 215, 0, 255 }, busStopMode },
-        { "[R]", "Route", "Transit", Color{ 180, 50, 220, 255 }, routeMode },
-        { "[D]", "Demolish", "Clear", Color{ 220, 50, 50, 255 }, demolishMode }
+        { "[1]", "Road", "₹100", "Lays road pavement for citizen commutes & bus lines", Color{ 130, 135, 145, 255 },
+          !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Road,
+          sim.getEconomy().canAfford(TileType::Road) },
+        { "[2]", "Resi", "₹2,000", "Zones residential plots for citizens to build homes", Color{ 70, 130, 220, 255 },
+          !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Residential,
+          sim.getEconomy().canAfford(TileType::Residential) },
+        { "[3]", "Comm", "₹5,000", "Zones commercial services and shops for city revenue", Color{ 240, 160, 40, 255 },
+          !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Commercial,
+          sim.getEconomy().canAfford(TileType::Commercial) },
+        { "[4]", "Ind", "₹10,000", "Zones factories creating jobs (generates heavy smog)", Color{ 175, 75, 75, 255 },
+          !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Industrial,
+          sim.getEconomy().canAfford(TileType::Industrial) },
+        { "[5]", "Park", "₹1,000", "Plants city parks (+15 land value boost, filters smog)", Color{ 35, 140, 60, 255 },
+          !demolishMode && !busStopMode && !routeMode && selectedBuildType == TileType::Park,
+          sim.getEconomy().canAfford(TileType::Park) },
+        { "[B]", "Bus Stop", "₹500", "Installs transit stops on roads for bus routes", Color{ 255, 215, 0, 255 },
+          busStopMode,
+          sim.getEconomy().canAfford(urbania::Transit::BUS_STOP_COST) },
+        { "[R]", "Route", "Transit", "Connects placed bus stops into active commuter routes", Color{ 180, 50, 220, 255 },
+          routeMode,
+          true },
+        { "[D]", "Demolish", "Free", "Clears structures and roads back to open grass", Color{ 220, 50, 50, 255 },
+          demolishMode,
+          true }
     };
 
     const int btnW = 96;
     const int btnH = 60;
     const int gap = 6;
     const Vector2 mouse = GetMousePosition();
+    int hoveredIdx = -1;
 
     for (int i = 0; i < 8; ++i)
     {
@@ -410,6 +430,7 @@ void UI::drawBottomDock(TileType selectedBuildType, bool demolishMode,
         const int by = dockY + 7;
         const bool hovered = (mouse.x >= bx && mouse.x <= bx + btnW && mouse.y >= by && mouse.y <= by + btnH);
         const bool selected = tools[i].active;
+        if (hovered) hoveredIdx = i;
 
         Color btnBg = selected ? Color{ 35, 48, 75, 255 } : (hovered ? Color{ 25, 34, 52, 255 } : Color{ 18, 24, 38, 255 });
         Color borderColor = selected ? Color{ 255, 215, 0, 255 } : (hovered ? Color{ 100, 130, 180, 255 } : Color{ 35, 48, 70, 255 });
@@ -428,10 +449,34 @@ void UI::drawBottomDock(TileType selectedBuildType, bool demolishMode,
         DrawText(tools[i].key, bx + 30, by + 8, 12, Color{ 130, 155, 195, 255 });
 
         // Name
-        DrawText(tools[i].name, bx + 8, by + 28, 13, selected ? WHITE : Color{ 210, 220, 235, 255 });
+        Color nameCol = selected ? WHITE : (tools[i].affordable ? Color{ 210, 220, 235, 255 } : Color{ 130, 140, 155, 255 });
+        DrawText(tools[i].name, bx + 8, by + 28, 13, nameCol);
 
         // Price
-        DrawText(tools[i].cost, bx + 8, by + 43, 11, Color{ 46, 204, 113, 220 });
+        Color costCol = tools[i].affordable ? Color{ 46, 204, 113, 220 } : Color{ 231, 76, 60, 240 };
+        DrawText(tools[i].cost, bx + 8, by + 43, 11, costCol);
+    }
+
+    // Floating Tooltip above dock when hovered
+    if (hoveredIdx >= 0)
+    {
+        const auto& t = tools[hoveredIdx];
+        std::string tipText = std::string(t.name) + " " + t.key + " • " + t.cost;
+        if (!t.affordable) tipText += " (Not Enough Funds)";
+        tipText += " — " + std::string(t.desc);
+
+        const int tipW = MeasureText(tipText.c_str(), 12) + 24;
+        const int tipH = 26;
+        const int tipX = std::clamp(static_cast<int>(mouse.x) - tipW / 2, 16, sw - tipW - 16);
+        const int tipY = dockY - tipH - 6;
+
+        DrawRectangleRounded(Rectangle{ static_cast<float>(tipX), static_cast<float>(tipY),
+                                       static_cast<float>(tipW), static_cast<float>(tipH) },
+                             0.3f, 4, Color{ 10, 14, 22, 240 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(tipX), static_cast<float>(tipY),
+                                            static_cast<float>(tipW), static_cast<float>(tipH) },
+                                  0.3f, 4, Color{ 60, 80, 115, 255 });
+        DrawText(tipText.c_str(), tipX + 12, tipY + 7, 12, t.affordable ? Color{ 230, 240, 255, 255 } : Color{ 255, 170, 170, 255 });
     }
 }
 
@@ -739,45 +784,75 @@ void UI::drawOverlayLegends(bool pollutionOverlay, bool landValueOverlay, bool h
     }
 }
 
-void UI::drawRouteBanner(bool routeMode, const std::vector<int>& currentRouteStops)
+void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
+                         const std::vector<int>& currentRouteStops)
 {
-    if (!routeMode)
-    {
-        return;
-    }
-
     const int sw = GetScreenWidth();
-    const int w = 540;
-    const int h = 54;
-    const int x = (sw - w) / 2;
-    const int y = 56;
 
-    DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                         0.25f, 4, Color{ 45, 20, 60, 240 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                              0.25f, 4, Color{ 180, 50, 220, 255 });
-
-    DrawText("BUS ROUTE BUILDER", x + 16, y + 10, 14, Color{ 255, 220, 40, 255 });
-    DrawText("[ENTER] Save  [ESC] Cancel  [Shift+R] Delete Latest", x + 190, y + 11, 12, Color{ 220, 200, 240, 255 });
-
-    std::string seq = "Stops: ";
-    if (currentRouteStops.empty())
+    if (demolishMode)
     {
-        seq += "Click bus stops on road to connect sequence...";
+        const int w = 480;
+        const int h = 44;
+        const int x = (sw - w) / 2;
+        const int y = 56;
+
+        DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                             0.25f, 4, Color{ 55, 15, 15, 240 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                                  0.25f, 4, Color{ 231, 76, 60, 255 });
+
+        DrawText("⚠ DEMOLISH MODE ACTIVE", x + 16, y + 8, 13, Color{ 255, 100, 100, 255 });
+        DrawText("Click developed tiles to clear (₹20) • Press [D] or [Esc] to Exit", x + 16, y + 24, 11, Color{ 230, 210, 210, 255 });
     }
-    else
+    else if (busStopMode)
     {
-        for (size_t i = 0; i < currentRouteStops.size(); ++i)
+        const int w = 520;
+        const int h = 44;
+        const int x = (sw - w) / 2;
+        const int y = 56;
+
+        DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                             0.25f, 4, Color{ 15, 35, 55, 240 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                                  0.25f, 4, Color{ 255, 215, 0, 255 });
+
+        DrawText("🚏 BUS STOP PLACEMENT", x + 16, y + 8, 13, Color{ 255, 225, 60, 255 });
+        DrawText("Click road tiles to place stop (₹500) • [Shift+Click] Remove • [B] Exit", x + 16, y + 24, 11, Color{ 210, 235, 255, 255 });
+    }
+    else if (routeMode)
+    {
+        const int w = 560;
+        const int h = 54;
+        const int x = (sw - w) / 2;
+        const int y = 56;
+
+        DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                             0.25f, 4, Color{ 45, 20, 60, 240 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                                  0.25f, 4, Color{ 180, 50, 220, 255 });
+
+        DrawText("🚌 BUS ROUTE BUILDER", x + 16, y + 10, 14, Color{ 255, 220, 40, 255 });
+        DrawText("[ENTER] Save  [ESC] Cancel  [Shift+R] Delete Latest", x + 200, y + 11, 12, Color{ 220, 200, 240, 255 });
+
+        std::string seq = "Stops: ";
+        if (currentRouteStops.empty())
         {
-            if (i > 0) seq += " -> ";
-            seq += "Stop #" + std::to_string(currentRouteStops[i]);
+            seq += "Click bus stops on road to connect sequence...";
         }
-        seq += " (" + std::to_string(currentRouteStops.size()) + " total)";
+        else
+        {
+            for (size_t i = 0; i < currentRouteStops.size(); ++i)
+            {
+                if (i > 0) seq += " -> ";
+                seq += "Stop #" + std::to_string(currentRouteStops[i]);
+            }
+            seq += " (" + std::to_string(currentRouteStops.size()) + " total)";
+        }
+        DrawText(seq.c_str(), x + 16, y + 30, 12, Color{ 245, 235, 255, 255 });
     }
-    DrawText(seq.c_str(), x + 16, y + 30, 12, Color{ 245, 235, 255, 255 });
 }
 
-void UI::drawToast(const std::string& msg, float timer, bool routeMode)
+void UI::drawToast(const std::string& msg, float timer, bool hasBanner)
 {
     if (msg.empty() || timer <= 0.0f)
     {
@@ -789,7 +864,7 @@ void UI::drawToast(const std::string& msg, float timer, bool routeMode)
     const int w = textW + 40;
     const int h = 36;
     const int x = (sw - w) / 2;
-    const int y = routeMode ? 118 : 58;
+    const int y = hasBanner ? 122 : 58;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.3f, 4, Color{ 20, 28, 45, 240 });
