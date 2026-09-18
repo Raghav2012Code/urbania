@@ -6,6 +6,7 @@ bool Simulation::initialize(World& world)
 {
     this->world = &world;
     elapsedSimulationSeconds = 0.0f;
+    population = Population();
     return true;
 }
 
@@ -18,8 +19,8 @@ void Simulation::update(float simulationDeltaTime)
 
     elapsedSimulationSeconds += simulationDeltaTime;
 
+    population.update(*world, simulationDeltaTime);
     // Future city systems run here on simulation time:
-    // population.update(simulationDeltaTime);
     // economy.update(simulationDeltaTime);
     // traffic.update(simulationDeltaTime);
     // pollution.update(simulationDeltaTime);
@@ -34,4 +35,9 @@ void Simulation::shutdown()
 float Simulation::getElapsedSimulationSeconds() const
 {
     return elapsedSimulationSeconds;
+}
+
+const Population& Simulation::getPopulation() const
+{
+    return population;
 }

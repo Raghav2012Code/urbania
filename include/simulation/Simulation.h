@@ -1,5 +1,7 @@
 #pragma once
 
+#include "simulation/Population.h"
+
 class World;
 
 // City simulation manager. Receives scaled simulation time from the
@@ -15,9 +17,11 @@ public:
     void shutdown();
 
     float getElapsedSimulationSeconds() const;
+    const Population& getPopulation() const;
 
 private:
     World* world = nullptr;
+    Population population;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.
