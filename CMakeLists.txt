@@ -12,7 +12,7 @@ endif()
 
 find_package(raylib REQUIRED)
 
-add_executable(Urbania src/main.cpp src/core/Game.cpp)
+add_executable(Urbania src/main.cpp src/core/Game.cpp src/world/Tile.cpp src/world/World.cpp)
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
