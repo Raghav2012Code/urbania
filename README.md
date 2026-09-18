@@ -67,4 +67,4 @@ On Windows (MSYS2 UCRT64):
 ./build/Urbania.exe
 ```
 
-You should see an 800x450 window titled "Urbania". Close the window to exit.
+You should see an 1920x1080 window titled "Urbania". Close the window to exit.

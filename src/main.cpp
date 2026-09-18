@@ -1,22 +1,28 @@
+#include "core/Game.h"
+
 #include "raylib.h"
 
 int main()
 {
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    Game game;
 
-    InitWindow(screenWidth, screenHeight, "Urbania");
-    SetTargetFPS(60);
+    if (!game.initialize())
+    {
+        return 1;
+    }
 
     while (!WindowShouldClose())
     {
+        float deltaTime = GetFrameTime();
+
+        game.update(deltaTime);
+
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText("Urbania", 350, 210, 20, DARKGRAY);
+        game.draw();
         EndDrawing();
     }
 
-    CloseWindow();
+    game.shutdown();
 
     return 0;
 }
