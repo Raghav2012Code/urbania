@@ -7,9 +7,11 @@ Citizen& CitizenManager::createCitizen(const TileCoordinate& home)
     Citizen citizen;
     citizen.id = nextId;
     citizen.home = home;
+    citizen.currentTile = home;
     citizen.income = DEFAULT_INCOME;
     citizen.happiness = DEFAULT_HAPPINESS;
     // employed stays false, workplace stays invalid until jobs exist.
+    // Movement starts at home once a commute route arrives.
     ++nextId;
 
     citizens.push_back(citizen);

@@ -21,6 +21,7 @@ constexpr Color BLOCKED_BORDER = { 220, 50, 50, 255 };
 constexpr Color DEMOLISH_FILL = { 220, 50, 50, 110 };
 constexpr Color PATH_TEST_OUTLINE = { 30, 100, 255, 255 };
 constexpr Color PATH_COMMUTE_DOT = { 150, 50, 200, 255 };
+constexpr Color CITIZEN_DOT = { 20, 60, 160, 255 };
 constexpr Color UNAVAILABLE_BORDER = { 150, 150, 150, 255 };
 
 Color tileColor(TileType type)
@@ -146,6 +147,7 @@ void Game::draw()
     drawHighlight();
     drawPathTest();
     drawCommutePath();
+    drawCitizens();
     camera.end();
 
     drawDebugText();
@@ -395,6 +397,44 @@ void Game::drawCommutePath()
     }
 }
 
+void Game::drawCitizens()
+{
+    // Temporary citizen visual: one dot per citizen at the interpolated
+    // world position between the last reached tile and the current
+    // target, so movement reads smoothly instead of snapping per tile.
+    const int tileSize = world.getTileSize();
+    const float halfTile = static_cast<float>(tileSize) / 2.0f;
+
+    for (const urbania::Citizen& citizen :
+         simulation.getPopulation().getCitizens().getCitizens())
+    {
+        if (!citizen.currentTile.valid)
+        {
+            continue;
+        }
+
+        urbania::TileCoordinate target = citizen.currentTile;
+        if (citizen.pathIndex >= 0 &&
+            citizen.pathIndex < static_cast<int>(citizen.commutePath.size()))
+        {
+            target = citizen.commutePath[citizen.pathIndex];
+        }
+
+        const float x = (static_cast<float>(citizen.currentTile.x) +
+                         (static_cast<float>(target.x - citizen.currentTile.x)) *
+                             citizen.movementProgress) *
+                            static_cast<float>(tileSize) +
+                        halfTile;
+        const float y = (static_cast<float>(citizen.currentTile.y) +
+                         (static_cast<float>(target.y - citizen.currentTile.y)) *
+                             citizen.movementProgress) *
+                            static_cast<float>(tileSize) +
+                        halfTile;
+
+        DrawCircle(static_cast<int>(x), static_cast<int>(y), 6.0f, CITIZEN_DOT);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -470,6 +510,32 @@ void Game::drawDebugText()
                         static_cast<int>(simulation.getCommuteSystem().getSampleRoute().size())),
              10, 426, 20, DARKGRAY);
 
+    DrawText(TextFormat("Moving Citizens: %d",
+                        simulation.getCitizenMovement().getMovingCitizens()),
+             10, 452, 20, DARKGRAY);
+
+    const urbania::Citizen* representative = nullptr;
+    for (const urbania::Citizen& citizen :
+         simulation.getPopulation().getCitizens().getCitizens())
+    {
+        if (!citizen.commutePath.empty())
+        {
+            representative = &citizen;
+            break;
+        }
+    }
+
+    if (representative != nullptr)
+    {
+        DrawText(TextFormat("Citizen %d: %d/%d", representative->id, representative->pathIndex,
+                            static_cast<int>(representative->commutePath.size())),
+                 10, 478, 20, DARKGRAY);
+    }
+    else
+    {
+        DrawText("Citizen: --", 10, 478, 20, DARKGRAY);
+    }
+
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
     {
@@ -477,11 +543,11 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 452, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 478, 20, DARKGRAY);
+                 10, 504, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 530, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 452, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 504, 20, DARKGRAY);
     }
 }
