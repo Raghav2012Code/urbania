@@ -19,12 +19,15 @@ SimulationClock::SimulationClock()
     : simulationTime(static_cast<float>((START_HOUR * SECONDS_PER_HOUR) +
                                        (START_MINUTE * SECONDS_PER_MINUTE))),
       timeScale(NORMAL_SPEED),
-      paused(false)
+      paused(false),
+      lastDeltaTime(0.0f)
 {
 }
 
 void SimulationClock::update(float deltaTime)
 {
+    lastDeltaTime = deltaTime;
+
     if (paused)
     {
         return;
@@ -64,6 +67,18 @@ float SimulationClock::getTimeScale() const
 float SimulationClock::getSimulationTime() const
 {
     return simulationTime;
+}
+
+float SimulationClock::getSimulationDeltaTime() const
+{
+    // Scaled simulation delta for the last frame: real deltaTime x
+    // timeScale, expressed in simulation seconds. Zero while paused.
+    if (paused)
+    {
+        return 0.0f;
+    }
+
+    return lastDeltaTime * timeScale * SIM_SECONDS_PER_REAL_SECOND;
 }
 
 bool SimulationClock::isPaused() const

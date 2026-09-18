@@ -30,6 +30,7 @@ public:
     float getTimeScale() const;
 
     float getSimulationTime() const;
+    float getSimulationDeltaTime() const;
     bool isPaused() const;
 
     int getDay() const;
@@ -40,4 +41,5 @@ private:
     float simulationTime;
     float timeScale;
     bool paused;
+    float lastDeltaTime;
 };

@@ -103,6 +103,11 @@ bool Game::initialize()
     RestoreWindow();
     SetWindowFocused();
 
+    if (!simulation.initialize(world))
+    {
+        return false;
+    }
+
     return IsWindowReady();
 }
 
@@ -111,10 +116,13 @@ void Game::update(float deltaTime)
     camera.update(deltaTime);
     input.update(camera);
     handleSimulationInput();
-    // Real deltaTime flows into the simulation clock first; all future
-    // simulation systems must consume scaled simulation time from the
-    // clock instead of GetFrameTime() directly.
+    // Real deltaTime flows into the simulation clock first; the scaled
+    // simulation delta then drives the simulation. Future city systems
+    // must consume simulation time, never GetFrameTime() directly.
+    // Construction stays outside the simulation loop: player building
+    // applies to the world immediately, even while paused.
     simulationClock.update(deltaTime);
+    simulation.update(simulationClock.getSimulationDeltaTime());
     handleBuildInput();
 }
 
@@ -132,6 +140,7 @@ void Game::draw()
 
 void Game::shutdown()
 {
+    simulation.shutdown();
     CloseWindow();
 }
 
@@ -340,5 +349,7 @@ void Game::drawDebugText()
                  20, DARKGRAY);
     }
 
-    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 166, 20, DARKGRAY);
+    DrawText(TextFormat("Simulated: %.1fs", simulation.getElapsedSimulationSeconds()), 10, 166, 20,
+             DARKGRAY);
+    DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 192, 20, DARKGRAY);
 }

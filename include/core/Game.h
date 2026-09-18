@@ -3,6 +3,7 @@
 #include "core/Camera.h"
 #include "core/Input.h"
 #include "simulation/Economy.h"
+#include "simulation/Simulation.h"
 #include "simulation/SimulationClock.h"
 #include "world/Tile.h"
 #include "world/World.h"
@@ -26,6 +27,7 @@ private:
     urbania::Input input;
     Economy economy;
     SimulationClock simulationClock;
+    Simulation simulation;
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;
