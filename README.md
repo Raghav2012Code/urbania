@@ -145,10 +145,10 @@ Done:
 - Citizen commute routes and visual movement
 - Vehicle traffic and road congestion slowdowns
 - Basic economy, daily citizen/job taxes, and tile maintenance
+- City demand indicators (Residential, Commercial, Industrial)
 
 Not yet implemented:
 
 - Public transport (buses, trains, stations)
-- Zoning demand curves (RCI demand meters)
 - Pollution and dynamic citizen happiness
 - Final UI, art textures, audio, and save/load persistence

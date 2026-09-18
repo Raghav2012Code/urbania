@@ -509,92 +509,149 @@ void Game::drawVehicles()
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
+    int y = 10;
+    const int step = 26;
 
     if (hovered.valid)
     {
-        DrawText(TextFormat("Tile: (%d, %d)", hovered.x, hovered.y), 10, 10, 20, DARKGRAY);
+        DrawText(TextFormat("Tile: (%d, %d)", hovered.x, hovered.y), 10, y, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Tile: Outside world", 10, 10, 20, DARKGRAY);
+        DrawText("Tile: Outside world", 10, y, 20, DARKGRAY);
     }
+    y += step;
 
     if (demolishMode)
     {
-        DrawText("Mode: DEMOLISH (D to exit)", 10, 36, 20, { 200, 40, 40, 255 });
+        DrawText("Mode: DEMOLISH (D to exit)", 10, y, 20, { 200, 40, 40, 255 });
+        y += step;
     }
     else
     {
-        DrawText(TextFormat("Build: %s", tileTypeName(selectedBuildType)), 10, 36, 20, DARKGRAY);
+        DrawText(TextFormat("Build: %s", tileTypeName(selectedBuildType)), 10, y, 20, DARKGRAY);
+        y += step;
         DrawText(TextFormat("Cost: %s", formatMoney(Economy::getCost(selectedBuildType)).c_str()), 10,
-                 62, 20, DARKGRAY);
+                 y, 20, DARKGRAY);
+        y += step;
+
+        if (selectedBuildType == TileType::Residential)
+        {
+            DrawText(TextFormat("Demand: %+d", simulation.getDemand().getResidentialDemand()), 10,
+                     y, 20, DARKGRAY);
+            y += step;
+        }
+        else if (selectedBuildType == TileType::Commercial)
+        {
+            DrawText(TextFormat("Demand: %+d", simulation.getDemand().getCommercialDemand()), 10,
+                     y, 20, DARKGRAY);
+            y += step;
+        }
+        else if (selectedBuildType == TileType::Industrial)
+        {
+            DrawText(TextFormat("Demand: %+d", simulation.getDemand().getIndustrialDemand()), 10,
+                     y, 20, DARKGRAY);
+            y += step;
+        }
     }
 
     DrawText(TextFormat("Money: %s", formatMoney(simulation.getEconomy().getMoney()).c_str()), 10,
-             88, 20, DARKGRAY);
+             y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Daily Income: %s",
                         formatMoney(static_cast<int>(simulation.getEconomy().getNetIncome())).c_str()),
-             10, 114, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Tax: %s",
                         formatMoney(static_cast<int>(simulation.getEconomy().getTaxIncome())).c_str()),
-             10, 140, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Maintenance: %s",
                         formatMoney(static_cast<int>(simulation.getEconomy().getMaintenanceCost()))
                             .c_str()),
-             10, 166, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
+
+    // Demand overview
+    DrawText("Demand", 10, y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Residential: %+d", simulation.getDemand().getResidentialDemand()), 10,
+             y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Commercial: %+d", simulation.getDemand().getCommercialDemand()), 10,
+             y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Industrial: %+d", simulation.getDemand().getIndustrialDemand()), 10,
+             y, 20, DARKGRAY);
+    y += step;
+
     DrawText(TextFormat("Day %d - %02d:%02d", simulationClock.getDay(), simulationClock.getHour(),
                         simulationClock.getMinute()),
-             10, 192, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
 
     if (simulationClock.isPaused())
     {
-        DrawText("PAUSED", 10, 218, 20, { 200, 40, 40, 255 });
+        DrawText("PAUSED", 10, y, 20, { 200, 40, 40, 255 });
     }
     else
     {
-        DrawText(TextFormat("Speed: %dx", static_cast<int>(simulationClock.getTimeScale())), 10, 218,
+        DrawText(TextFormat("Speed: %dx", static_cast<int>(simulationClock.getTimeScale())), 10, y,
                  20, DARKGRAY);
     }
+    y += step;
 
-    DrawText(TextFormat("Simulated: %.1fs", simulation.getElapsedSimulationSeconds()), 10, 244, 20,
+    DrawText(TextFormat("Simulated: %.1fs", simulation.getElapsedSimulationSeconds()), 10, y, 20,
              DARKGRAY);
-    DrawText(TextFormat("Population: %d", simulation.getPopulation().getTotalPopulation()), 10, 270,
+    y += step;
+    DrawText(TextFormat("Population: %d", simulation.getPopulation().getTotalPopulation()), 10, y,
              20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Housing: %d / %d", simulation.getPopulation().getTotalPopulation(),
                         simulation.getPopulation().getTotalHousingCapacity()),
-             10, 296, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Jobs: %d / %d", simulation.getEmployment().getOccupiedJobs(),
                         simulation.getEmployment().getTotalJobs()),
-             10, 322, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Employment: %d / %d", simulation.getEmployment().getEmployedCitizens(),
                         simulation.getPopulation().getTotalPopulation()),
-             10, 348, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Unemployed: %d", simulation.getEmployment().getUnemployedCitizens()), 10,
-             374, 20, DARKGRAY);
-    DrawText(TextFormat("Road Nodes: %d", simulation.getRoadNetwork().getNodeCount()), 10, 400, 20,
+             y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("Road Nodes: %d", simulation.getRoadNetwork().getNodeCount()), 10, y, 20,
              DARKGRAY);
+    y += step;
 
     if (pathTest.empty())
     {
-        DrawText("Path Test: No Path", 10, 426, 20, DARKGRAY);
+        DrawText("Path Test: No Path", 10, y, 20, DARKGRAY);
     }
     else
     {
-        DrawText(TextFormat("Path Test Length: %d", static_cast<int>(pathTest.size())), 10, 426,
+        DrawText(TextFormat("Path Test Length: %d", static_cast<int>(pathTest.size())), 10, y,
                  20, DARKGRAY);
     }
+    y += step;
 
     DrawText(TextFormat("Commute Routes: %d", simulation.getCommuteSystem().getRoutedCitizens()),
-             10, 452, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("No Route: %d", simulation.getCommuteSystem().getUnroutedCitizens()), 10,
-             478, 20, DARKGRAY);
+             y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Route Length: %d",
                         static_cast<int>(simulation.getCommuteSystem().getSampleRoute().size())),
-             10, 504, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
 
     DrawText(TextFormat("Moving Citizens: %d",
                         simulation.getCitizenMovement().getMovingCitizens()),
-             10, 530, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
 
     const urbania::Citizen* representative = nullptr;
     for (const urbania::Citizen& citizen :
@@ -610,24 +667,30 @@ void Game::drawDebugText()
     if (representative != nullptr)
     {
         DrawText(TextFormat("Citizen %d: %d/%d", representative->id, representative->pathIndex,
-                            static_cast<int>(representative->commutePath.size())),
-                 10, 556, 20, DARKGRAY);
+                             static_cast<int>(representative->commutePath.size())),
+                 10, y, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Citizen: --", 10, 556, 20, DARKGRAY);
+        DrawText("Citizen: --", 10, y, 20, DARKGRAY);
     }
+    y += step;
 
-    DrawText(TextFormat("Vehicles: %d", simulation.getTraffic().getVehicleCount()), 10, 582,
+    DrawText(TextFormat("Vehicles: %d", simulation.getTraffic().getVehicleCount()), 10, y,
              20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Active Vehicles: %d", simulation.getTraffic().getActiveVehicleCount()),
-             10, 608, 20, DARKGRAY);
-    DrawText(TextFormat("Roads: %d", simulation.getRoadNetwork().getNodeCount()), 10, 634, 20,
+             10, y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("Roads: %d", simulation.getRoadNetwork().getNodeCount()), 10, y, 20,
              DARKGRAY);
+    y += step;
     DrawText(TextFormat("Congested Roads: %d", simulation.getCongestion().getCongestedRoadCount()),
-             10, 660, 20, DARKGRAY);
+             10, y, 20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Max Congestion: %.1f", simulation.getCongestion().getMaxCongestion()), 10,
-             686, 20, DARKGRAY);
+             y, 20, DARKGRAY);
+    y += step;
 
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
@@ -636,20 +699,23 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 712, 20, DARKGRAY);
+                 10, y, 20, DARKGRAY);
+        y += step;
         DrawText(TextFormat("Vehicles: %d / Capacity: %d",
                             simulation.getCongestion().getVehicleCount(hovered.x, hovered.y),
                             urbania::Congestion::getCapacity()),
-                 10, 738, 20, DARKGRAY);
+                 10, y, 20, DARKGRAY);
+        y += step;
         DrawText(TextFormat("Congestion: %.1f",
                             simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
-                 10, 764, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 790,
+                 10, y, 20, DARKGRAY);
+        y += step;
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, 712,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
 }
@@ -666,19 +732,20 @@ void Game::drawSelfTest()
     const bool failed = total > passed;
     const Color summaryColor = failed ? Color{ 200, 40, 40, 255 } : DARKGRAY;
 
-    DrawText(TextFormat("SelfTest: %d/%d", passed, total), 10, 818, 20, summaryColor);
+    DrawText(TextFormat("SelfTest: %d/%d", passed, total), 1450, 10, 20, summaryColor);
 
-    int y = 844;
+    int y = 36;
     int shown = 0;
     for (const std::string& line : selfTest.getResults())
     {
-        if (shown >= 11)
+        if (shown >= 20)
         {
             break;
         }
         const bool failed = line.rfind("FAIL", 0) == 0;
-        DrawText(line.c_str(), 10, y, 20, failed ? Color{ 200, 40, 40, 255 } : DARKGRAY);
+        DrawText(line.c_str(), 1450, y, 20, failed ? Color{ 200, 40, 40, 255 } : DARKGRAY);
         y += 26;
         ++shown;
     }
 }
+

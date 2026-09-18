@@ -2,6 +2,7 @@
 
 #include "simulation/CitizenManager.h"
 #include "simulation/Congestion.h"
+#include "simulation/Demand.h"
 #include "simulation/Economy.h"
 #include "simulation/Pathfinder.h"
 #include "simulation/Simulation.h"
@@ -227,6 +228,15 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
               Economy::getMaintenanceForTile(TileType::Commercial) == 10.0f &&
               Economy::RESIDENTIAL_TAX_PER_CITIZEN == 100.0f,
           "T12 economy rates & non-negative money");
+
+    const int rDem = simulation.getDemand().getResidentialDemand();
+    const int cDem = simulation.getDemand().getCommercialDemand();
+    const int iDem = simulation.getDemand().getIndustrialDemand();
+    const bool demandBounds = rDem >= Demand::MIN_DEMAND && rDem <= Demand::MAX_DEMAND &&
+                              cDem >= Demand::MIN_DEMAND && cDem <= Demand::MAX_DEMAND &&
+                              iDem >= Demand::MIN_DEMAND && iDem <= Demand::MAX_DEMAND;
+    check(demandBounds && Demand::MIN_DEMAND == -100 && Demand::MAX_DEMAND == 100,
+          "T13 demand in range [-100, 100]");
 }
 
 bool SelfTest::hasRun() const

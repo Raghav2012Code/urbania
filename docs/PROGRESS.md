@@ -199,6 +199,17 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - Real-time economy HUD displaying Money, Daily Net Income, Tax, and
   Maintenance.
 
+## Phase 20 — City demand system
+
+- `Demand` (owned by `Simulation`): normalized [-100, +100] demand indicators
+  for Residential, Commercial, and Industrial sectors.
+- Simple deterministic formulas based on population, housing occupancy, and
+  sector workforce balance; bounds clamped cleanly to [-100, +100].
+- Hourly simulation-time updates (every 3,600 sim-seconds); pause halts
+  accumulation and values remain deterministic.
+- HUD integration with an overview demand block plus real-time demand preview
+  on selected construction types.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
