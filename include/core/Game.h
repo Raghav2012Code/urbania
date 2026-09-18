@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Camera.h"
 #include "world/World.h"
 
 class Game {
@@ -10,5 +11,8 @@ public:
     void shutdown();
 
 private:
+    void drawWorld();
+
     World world;
+    urbania::Camera camera;
 };

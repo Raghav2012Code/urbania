@@ -23,13 +23,25 @@ bool Game::initialize()
 
 void Game::update(float deltaTime)
 {
-    (void)deltaTime;
+    camera.update(deltaTime);
 }
 
 void Game::draw()
 {
     ClearBackground(RAYWHITE);
 
+    camera.begin();
+    drawWorld();
+    camera.end();
+}
+
+void Game::shutdown()
+{
+    CloseWindow();
+}
+
+void Game::drawWorld()
+{
     const int tileSize = world.getTileSize();
 
     for (int y = 0; y < world.getHeight(); ++y)
@@ -60,9 +72,4 @@ void Game::draw()
     {
         DrawLine(0, y * tileSize, gridWidth, y * tileSize, GRID_LINE);
     }
-}
-
-void Game::shutdown()
-{
-    CloseWindow();
 }
