@@ -28,8 +28,8 @@ constexpr int ROAD_Y = 71;
 constexpr int ROAD_X0 = 70;
 constexpr int ROAD_X1 = 74;
 
-// 2000 (home) + 5000 (work) + 5x100 (roads) + 100 (restore) = 7600.
-constexpr int REQUIRED_MONEY = 7600;
+// 2000 (home) + 5000 (work) + 5x100 (roads) + 100 (restore) + 3x500 (transit stops) = 9100.
+constexpr int REQUIRED_MONEY = 9100;
 constexpr float SIM_HOUR = 3600.0f;
 
 int manhattan(int x1, int y1, int x2, int y2)
@@ -60,7 +60,7 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     }
     if (economy.getMoney() < REQUIRED_MONEY)
     {
-        results.push_back("SKIP: need Rs. 7,600 for the test build");
+        results.push_back("SKIP: need Rs. 9,100 for the test build");
         return;
     }
 
@@ -218,67 +218,6 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
         check(simulation.getTraffic().getVehicleCount() >= 1, "T8 vehicle exists");
     }
 
-    // T9: cleanup demolishes the test district; network returns.
-    economy.tryDemolish(world.getTile(HOME_X, HOME_Y));
-    economy.tryDemolish(world.getTile(WORK_X, WORK_Y));
-    for (int x = ROAD_X0; x <= ROAD_X1; ++x)
-    {
-        economy.tryDemolish(world.getTile(x, ROAD_Y));
-    }
-    simulation.getRoadNetwork().rebuild(world);
-    simulation.update(0.0f);
-    check(simulation.getRoadNetwork().getNodeCount() == nodesBefore, "T9 cleanup nodes back");
-    check(simulation.getPopulation().getResidentsAt(HOME_X, HOME_Y) == 0,
-          "T10 cleanup residents gone");
-    check(simulation.getEconomy().getMoney() >= 0 &&
-              Economy::getMaintenanceForTile(TileType::Road) == 2.0f &&
-              Economy::getMaintenanceForTile(TileType::Commercial) == 10.0f &&
-              Economy::RESIDENTIAL_TAX_PER_CITIZEN == 100.0f,
-          "T12 economy rates & non-negative money");
-
-    const int rDem = simulation.getDemand().getResidentialDemand();
-    const int cDem = simulation.getDemand().getCommercialDemand();
-    const int iDem = simulation.getDemand().getIndustrialDemand();
-    const bool demandBounds = rDem >= Demand::MIN_DEMAND && rDem <= Demand::MAX_DEMAND &&
-                              cDem >= Demand::MIN_DEMAND && cDem <= Demand::MAX_DEMAND &&
-                              iDem >= Demand::MIN_DEMAND && iDem <= Demand::MAX_DEMAND;
-    check(demandBounds && Demand::MIN_DEMAND == -100 && Demand::MAX_DEMAND == 100,
-          "T13 demand in range [-100, 100]");
-
-    const float avgP = simulation.getPollution().getAveragePollution();
-    const float maxP = simulation.getPollution().getMaxPollution();
-    const bool pollBounds = avgP >= Pollution::MIN_POLLUTION && avgP <= Pollution::MAX_POLLUTION &&
-                            maxP >= Pollution::MIN_POLLUTION && maxP <= Pollution::MAX_POLLUTION;
-    check(pollBounds && Pollution::INDUSTRIAL_POLLUTION_PER_HOUR == 10.0f &&
-              Pollution::PARK_POLLUTION_REDUCTION_PER_HOUR == 4.0f &&
-              Pollution::NATURAL_POLLUTION_DECAY_PER_HOUR == 1.0f,
-          "T14 pollution bounds & rates");
-
-    const float avgH = simulation.getHappiness().getAverageHappiness();
-    const bool happyBounds =
-        avgH >= Happiness::MIN_HAPPINESS && avgH <= Happiness::MAX_HAPPINESS;
-    check(happyBounds && Happiness::BASE_HAPPINESS == 50.0f &&
-              Happiness::EMPLOYED_BONUS == 15.0f && Happiness::UNEMPLOYED_PENALTY == -15.0f &&
-              Happiness::PARK_BONUS == 15.0f,
-          "T15 happiness bounds & rates");
-
-    const float avgLV = simulation.getLandValue().getAverageLandValue();
-    const bool lvBounds =
-        avgLV >= LandValue::MIN_LAND_VALUE && avgLV <= LandValue::MAX_LAND_VALUE;
-    check(lvBounds && LandValue::BASE_LAND_VALUE == 50.0f &&
-              LandValue::PARK_LAND_VALUE_BONUS == 15.0f &&
-              LandValue::POLLUTION_PENALTY_FACTOR == 0.35f,
-          "T16 land value bounds & rates");
-
-    const int hPress = simulation.getHousing().getHousingPressure();
-    const float occRatio = simulation.getHousing().getOccupancyRatio();
-    const bool housingBounds = hPress >= Housing::MIN_HOUSING_PRESSURE &&
-                               hPress <= Housing::MAX_HOUSING_PRESSURE &&
-                               occRatio >= 0.0f && occRatio <= 1.0f;
-    check(housingBounds && Housing::CAPACITY_PER_TILE == 10 &&
-              Housing::MIN_HOUSING_PRESSURE == -100 && Housing::MAX_HOUSING_PRESSURE == 100,
-          "T17 housing capacity & pressure bounds");
-
     // T18: Transit bus stop validation, placement, cost deduction, and removal
     {
         const int roadX = ROAD_X0;
@@ -345,6 +284,67 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
 
         check(routeOk, "T19 transit bus route creation, validation & deletion");
     }
+
+    // T9: cleanup demolishes the test district; network returns.
+    economy.tryDemolish(world.getTile(HOME_X, HOME_Y));
+    economy.tryDemolish(world.getTile(WORK_X, WORK_Y));
+    for (int x = ROAD_X0; x <= ROAD_X1; ++x)
+    {
+        economy.tryDemolish(world.getTile(x, ROAD_Y));
+    }
+    simulation.getRoadNetwork().rebuild(world);
+    simulation.update(0.0f);
+    check(simulation.getRoadNetwork().getNodeCount() == nodesBefore, "T9 cleanup nodes back");
+    check(simulation.getPopulation().getResidentsAt(HOME_X, HOME_Y) == 0,
+          "T10 cleanup residents gone");
+    check(simulation.getEconomy().getMoney() >= 0 &&
+              Economy::getMaintenanceForTile(TileType::Road) == 2.0f &&
+              Economy::getMaintenanceForTile(TileType::Commercial) == 10.0f &&
+              Economy::RESIDENTIAL_TAX_PER_CITIZEN == 100.0f,
+          "T12 economy rates & non-negative money");
+
+    const int rDem = simulation.getDemand().getResidentialDemand();
+    const int cDem = simulation.getDemand().getCommercialDemand();
+    const int iDem = simulation.getDemand().getIndustrialDemand();
+    const bool demandBounds = rDem >= Demand::MIN_DEMAND && rDem <= Demand::MAX_DEMAND &&
+                              cDem >= Demand::MIN_DEMAND && cDem <= Demand::MAX_DEMAND &&
+                              iDem >= Demand::MIN_DEMAND && iDem <= Demand::MAX_DEMAND;
+    check(demandBounds && Demand::MIN_DEMAND == -100 && Demand::MAX_DEMAND == 100,
+          "T13 demand in range [-100, 100]");
+
+    const float avgP = simulation.getPollution().getAveragePollution();
+    const float maxP = simulation.getPollution().getMaxPollution();
+    const bool pollBounds = avgP >= Pollution::MIN_POLLUTION && avgP <= Pollution::MAX_POLLUTION &&
+                            maxP >= Pollution::MIN_POLLUTION && maxP <= Pollution::MAX_POLLUTION;
+    check(pollBounds && Pollution::INDUSTRIAL_POLLUTION_PER_HOUR == 10.0f &&
+              Pollution::PARK_POLLUTION_REDUCTION_PER_HOUR == 4.0f &&
+              Pollution::NATURAL_POLLUTION_DECAY_PER_HOUR == 1.0f,
+          "T14 pollution bounds & rates");
+
+    const float avgH = simulation.getHappiness().getAverageHappiness();
+    const bool happyBounds =
+        avgH >= Happiness::MIN_HAPPINESS && avgH <= Happiness::MAX_HAPPINESS;
+    check(happyBounds && Happiness::BASE_HAPPINESS == 50.0f &&
+              Happiness::EMPLOYED_BONUS == 15.0f && Happiness::UNEMPLOYED_PENALTY == -15.0f &&
+              Happiness::PARK_BONUS == 15.0f,
+          "T15 happiness bounds & rates");
+
+    const float avgLV = simulation.getLandValue().getAverageLandValue();
+    const bool lvBounds =
+        avgLV >= LandValue::MIN_LAND_VALUE && avgLV <= LandValue::MAX_LAND_VALUE;
+    check(lvBounds && LandValue::BASE_LAND_VALUE == 50.0f &&
+              LandValue::PARK_LAND_VALUE_BONUS == 15.0f &&
+              LandValue::POLLUTION_PENALTY_FACTOR == 0.35f,
+          "T16 land value bounds & rates");
+
+    const int hPress = simulation.getHousing().getHousingPressure();
+    const float occRatio = simulation.getHousing().getOccupancyRatio();
+    const bool housingBounds = hPress >= Housing::MIN_HOUSING_PRESSURE &&
+                               hPress <= Housing::MAX_HOUSING_PRESSURE &&
+                               occRatio >= 0.0f && occRatio <= 1.0f;
+    check(housingBounds && Housing::CAPACITY_PER_TILE == 10 &&
+              Housing::MIN_HOUSING_PRESSURE == -100 && Housing::MAX_HOUSING_PRESSURE == 100,
+          "T17 housing capacity & pressure bounds");
 }
 
 bool SelfTest::hasRun() const
