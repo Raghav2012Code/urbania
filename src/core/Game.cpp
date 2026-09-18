@@ -3,6 +3,7 @@
 #include <string>
 
 #include "raylib.h"
+#include "simulation/Pathfinder.h"
 #include "world/Tile.h"
 
 namespace {
@@ -18,6 +19,7 @@ constexpr Color HIGHLIGHT_BORDER = { 255, 203, 5, 255 };
 constexpr Color PREVIEW_FILL = { 255, 255, 255, 110 };
 constexpr Color BLOCKED_BORDER = { 220, 50, 50, 255 };
 constexpr Color DEMOLISH_FILL = { 220, 50, 50, 110 };
+constexpr Color PATH_TEST_OUTLINE = { 30, 100, 255, 255 };
 constexpr Color UNAVAILABLE_BORDER = { 150, 150, 150, 255 };
 
 Color tileColor(TileType type)
@@ -124,6 +126,14 @@ void Game::update(float deltaTime)
     simulationClock.update(deltaTime);
     simulation.update(simulationClock.getSimulationDeltaTime());
     handleBuildInput();
+
+    // Temporary A* debug test refreshes only when the world changes,
+    // never every frame.
+    if (pathTestDirty)
+    {
+        recomputePathTest();
+        pathTestDirty = false;
+    }
 }
 
 void Game::draw()
@@ -133,6 +143,7 @@ void Game::draw()
     camera.begin();
     drawWorld();
     drawHighlight();
+    drawPathTest();
     camera.end();
 
     drawDebugText();
@@ -234,9 +245,14 @@ void Game::handleBuildInput()
     }
 
     // Refresh the road graph only when a tile changes to or from Road.
+    // Any successful edit also refreshes the temporary path test.
     if (changed && (oldType == TileType::Road || tile.type == TileType::Road))
     {
         simulation.getRoadNetwork().rebuild(world);
+    }
+    if (changed)
+    {
+        pathTestDirty = true;
     }
 }
 
@@ -319,6 +335,52 @@ void Game::drawHighlight()
     }
 }
 
+void Game::recomputePathTest()
+{
+    // Temporary A* debug test: path between the first and last road
+    // tiles in scan order. No path (fewer than two roads) is a valid
+    // outcome, not an error.
+    urbania::TileCoordinate first{};
+    urbania::TileCoordinate last{};
+    bool found = false;
+
+    for (int y = 0; y < world.getHeight(); ++y)
+    {
+        for (int x = 0; x < world.getWidth(); ++x)
+        {
+            if (world.getTile(x, y).type == TileType::Road)
+            {
+                if (!found)
+                {
+                    first = { x, y, true };
+                    found = true;
+                }
+                last = { x, y, true };
+            }
+        }
+    }
+
+    pathTest.clear();
+    if (found)
+    {
+        pathTest = urbania::Pathfinder::findPath(simulation.getRoadNetwork(), first, last);
+    }
+}
+
+void Game::drawPathTest()
+{
+    // Temporary debug visual: thin outline around each tile of the
+    // test path so the route is visible while panning and zooming.
+    const int tileSize = world.getTileSize();
+    for (const urbania::TileCoordinate& step : pathTest)
+    {
+        DrawRectangleLinesEx({ static_cast<float>(step.x * tileSize),
+                               static_cast<float>(step.y * tileSize),
+                               static_cast<float>(tileSize), static_cast<float>(tileSize) },
+                             2.0f, PATH_TEST_OUTLINE);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -376,6 +438,16 @@ void Game::drawDebugText()
     DrawText(TextFormat("Road Nodes: %d", simulation.getRoadNetwork().getNodeCount()), 10, 322, 20,
              DARKGRAY);
 
+    if (pathTest.empty())
+    {
+        DrawText("Path Test: No Path", 10, 348, 20, DARKGRAY);
+    }
+    else
+    {
+        DrawText(TextFormat("Path Test Length: %d", static_cast<int>(pathTest.size())), 10, 348,
+                 20, DARKGRAY);
+    }
+
     if (hovered.valid &&
         simulation.getRoadNetwork().isRoad(hovered.x, hovered.y))
     {
@@ -383,11 +455,11 @@ void Game::drawDebugText()
                             static_cast<int>(simulation.getRoadNetwork()
                                                  .getNeighbors(hovered)
                                                  .size())),
-                 10, 348, 20, DARKGRAY);
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 374, 20, DARKGRAY);
+                 10, 374, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 400, 20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 348, 20, DARKGRAY);
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed", 10, 374, 20, DARKGRAY);
     }
 }

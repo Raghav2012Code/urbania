@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "core/Camera.h"
 #include "core/Input.h"
 #include "simulation/Economy.h"
@@ -18,8 +20,10 @@ public:
 private:
     void handleBuildInput();
     void handleSimulationInput();
+    void recomputePathTest();
     void drawWorld();
     void drawHighlight();
+    void drawPathTest();
     void drawDebugText();
 
     World world;
@@ -31,4 +35,9 @@ private:
 
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;
+
+    // Temporary A* debug test: path between the first and last road
+    // tiles, recomputed only when the world changes.
+    std::vector<urbania::TileCoordinate> pathTest;
+    bool pathTestDirty = true;
 };
