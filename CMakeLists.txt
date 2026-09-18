@@ -40,6 +40,7 @@ add_executable(Urbania
     src/simulation/LandValue.cpp
     src/simulation/Housing.cpp
     src/simulation/BusStop.cpp
+    src/simulation/BusRoute.cpp
     src/simulation/Transit.cpp
 )
 

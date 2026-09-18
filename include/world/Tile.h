@@ -39,6 +39,11 @@ struct TileCoordinate {
     {
         return x == other.x && y == other.y && valid == other.valid;
     }
+
+    bool operator!=(const TileCoordinate& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 }  // namespace urbania

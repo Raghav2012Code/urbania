@@ -32,6 +32,7 @@ private:
     void drawLandValueOverlay();
     void drawHousingOverlay();
     void drawBusStops();
+    void drawBusRoutes();
     void drawDebugText();
     void drawSelfTest();
 
@@ -45,9 +46,14 @@ private:
     TileType selectedBuildType = TileType::Road;
     bool demolishMode = false;
     bool busStopMode = false;
+    bool routeMode = false;
     bool pollutionOverlay = false;
     bool landValueOverlay = false;
     bool housingOverlay = false;
+
+    std::vector<int> currentRouteStops;
+    std::string transitMessage;
+    float transitMessageTimer = 0.0f;
 
     // Temporary A* debug test: path between the first and last road
     // tiles, recomputed only when the world changes.

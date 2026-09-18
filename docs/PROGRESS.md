@@ -271,6 +271,20 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - Visual rendering: Raylib-based bus stop marker with yellow background and navy sign glyph on road tiles.
 - HUD displays total bus stops count (`Bus Stops: X`) and hovered bus stop ID (`Bus Stop ID: X`).
 
+## Phase 26 — Bus routes
+
+- `BusRoute` & `Transit`: route creation, validation, connectivity checking, and management
+  system for ordered bus-stop sequences with deterministic 1-based IDs.
+- Validation rules: Minimum 2 stops, existence check for all stop IDs, duplicate prevention
+  (with loop closure support), and contiguous road network connectivity via `Pathfinder`.
+- Bus stop removal cascades cleanly: affected routes drop the stop and are removed if fewer
+  than 2 stops remain.
+- Interactive mode: `R` key toggles Route Mode (click stops in order, Enter saves, Esc cancels;
+  `Shift + R` deletes the most recent route).
+- Visual rendering: Colored connection lines for saved routes, bright highlight segments
+  and numbered stop markers during draft route creation.
+- HUD displays `Route Mode`, `Stops: X`, `Current Route: 1 -> 2 -> ...`, and `Bus Routes: X`.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
@@ -280,6 +294,7 @@ live in-game checks driven through the actual window (build, demolish,
 pause, speeds, screenshots with pixel checks), a scoped-diff review,
 and a commit + push with remote-HEAD confirmation. Simulation code
 stays raylib-free throughout, proven by grep on every phase.
+
 
 
 

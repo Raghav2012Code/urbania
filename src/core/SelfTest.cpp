@@ -1,5 +1,6 @@
 #include "core/SelfTest.h"
 
+#include "simulation/BusRoute.h"
 #include "simulation/CitizenManager.h"
 #include "simulation/Congestion.h"
 #include "simulation/Demand.h"
@@ -303,6 +304,46 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
         transitOk = transitOk && (world.getTile(roadX, roadY).type == TileType::Road); // road untouched
 
         check(transitOk, "T18 transit bus stop placement & removal");
+    }
+
+    // T19: Transit bus route creation, validation & deletion
+    {
+        const int roadA_X = ROAD_X0;
+        const int roadA_Y = ROAD_Y;
+        const int roadB_X = ROAD_X1;
+        const int roadB_Y = ROAD_Y;
+
+        bool routeOk = (Transit::MIN_ROUTE_STOPS == 2);
+        simulation.getTransit().addBusStop(world, roadA_X, roadA_Y, economy);
+        simulation.getTransit().addBusStop(world, roadB_X, roadB_Y, economy);
+
+        const auto* stopA = simulation.getTransit().getBusStop(roadA_X, roadA_Y);
+        const auto* stopB = simulation.getTransit().getBusStop(roadB_X, roadB_Y);
+        routeOk = routeOk && (stopA != nullptr && stopB != nullptr);
+
+        if (stopA != nullptr && stopB != nullptr)
+        {
+            // Route with 1 stop fails
+            routeOk = routeOk && !simulation.getTransit().validateRoute(
+                                     simulation.getRoadNetwork(), { stopA->id });
+
+            // Route with connected stops succeeds
+            const bool created = simulation.getTransit().createRoute(
+                simulation.getRoadNetwork(), { stopA->id, stopB->id });
+            routeOk = routeOk && created;
+            routeOk = routeOk && (simulation.getTransit().getRouteCount() == 1);
+            const auto* r = simulation.getTransit().getRoute(1);
+            routeOk = routeOk && (r != nullptr && r->stopIds.size() == 2);
+
+            // Deleting one stop clears the route (< 2 stops left)
+            simulation.getTransit().removeBusStop(roadB_X, roadB_Y);
+            routeOk = routeOk && (simulation.getTransit().getRouteCount() == 0);
+
+            // Clean up remaining stop
+            simulation.getTransit().removeBusStop(roadA_X, roadA_Y);
+        }
+
+        check(routeOk, "T19 transit bus route creation, validation & deletion");
     }
 }
 

@@ -144,6 +144,15 @@ void Game::update(float deltaTime)
     simulation.update(simulationClock.getSimulationDeltaTime());
     handleBuildInput();
 
+    if (transitMessageTimer > 0.0f)
+    {
+        transitMessageTimer -= deltaTime;
+        if (transitMessageTimer <= 0.0f)
+        {
+            transitMessage.clear();
+        }
+    }
+
     // Temporary A* debug test refreshes only when the world changes,
     // never every frame.
     if (pathTestDirty)
@@ -160,6 +169,7 @@ void Game::draw()
     camera.begin();
     drawWorld();
     drawBusStops();
+    drawBusRoutes();
     if (pollutionOverlay)
     {
         drawPollutionOverlay();
@@ -243,36 +253,46 @@ void Game::handleSimulationInput()
 
 void Game::handleBuildInput()
 {
-    // Build-type selection also leaves demolition and bus stop modes.
+    // Build-type selection also leaves demolition, bus stop, and route modes.
     if (IsKeyPressed(KEY_ONE))
     {
         selectedBuildType = TileType::Road;
         demolishMode = false;
         busStopMode = false;
+        routeMode = false;
+        currentRouteStops.clear();
     }
     else if (IsKeyPressed(KEY_TWO))
     {
         selectedBuildType = TileType::Residential;
         demolishMode = false;
         busStopMode = false;
+        routeMode = false;
+        currentRouteStops.clear();
     }
     else if (IsKeyPressed(KEY_THREE))
     {
         selectedBuildType = TileType::Commercial;
         demolishMode = false;
         busStopMode = false;
+        routeMode = false;
+        currentRouteStops.clear();
     }
     else if (IsKeyPressed(KEY_FOUR))
     {
         selectedBuildType = TileType::Industrial;
         demolishMode = false;
         busStopMode = false;
+        routeMode = false;
+        currentRouteStops.clear();
     }
     else if (IsKeyPressed(KEY_FIVE))
     {
         selectedBuildType = TileType::Park;
         demolishMode = false;
         busStopMode = false;
+        routeMode = false;
+        currentRouteStops.clear();
     }
     else if (IsKeyPressed(KEY_D))
     {
@@ -280,6 +300,8 @@ void Game::handleBuildInput()
         if (demolishMode)
         {
             busStopMode = false;
+            routeMode = false;
+            currentRouteStops.clear();
         }
     }
     else if (IsKeyPressed(KEY_B))
@@ -288,6 +310,73 @@ void Game::handleBuildInput()
         if (busStopMode)
         {
             demolishMode = false;
+            routeMode = false;
+            currentRouteStops.clear();
+        }
+    }
+    else if (IsKeyPressed(KEY_R))
+    {
+        const bool isShift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+        if (isShift)
+        {
+            if (simulation.getTransit().deleteLatestRoute())
+            {
+                transitMessage = "Deleted latest bus route.";
+                transitMessageTimer = 3.0f;
+            }
+            else
+            {
+                transitMessage = "No bus routes to delete.";
+                transitMessageTimer = 3.0f;
+            }
+        }
+        else
+        {
+            routeMode = !routeMode;
+            if (routeMode)
+            {
+                demolishMode = false;
+                busStopMode = false;
+                currentRouteStops.clear();
+                transitMessage = "Route Mode: Click bus stops, Enter to save, Esc to cancel.";
+                transitMessageTimer = 4.0f;
+            }
+            else
+            {
+                currentRouteStops.clear();
+            }
+        }
+    }
+
+    if (routeMode)
+    {
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER))
+        {
+            if (currentRouteStops.size() < urbania::Transit::MIN_ROUTE_STOPS)
+            {
+                transitMessage = "Route needs at least 2 stops.";
+                transitMessageTimer = 3.0f;
+            }
+            else if (!simulation.getTransit().createRoute(simulation.getRoadNetwork(),
+                                                          currentRouteStops))
+            {
+                transitMessage = "Route invalid: stops not connected by road network.";
+                transitMessageTimer = 3.0f;
+            }
+            else
+            {
+                transitMessage = TextFormat("Created Bus Route #%d with %d stops.",
+                                            simulation.getTransit().getRoutes().back().id,
+                                            static_cast<int>(currentRouteStops.size()));
+                transitMessageTimer = 3.0f;
+                currentRouteStops.clear();
+            }
+        }
+        else if (IsKeyPressed(KEY_ESCAPE))
+        {
+            currentRouteStops.clear();
+            transitMessage = "Cancelled current route draft.";
+            transitMessageTimer = 2.0f;
         }
     }
 
@@ -312,6 +401,51 @@ void Game::handleBuildInput()
         else
         {
             simulation.getTransit().addBusStop(world, hovered, simulation.getEconomy());
+        }
+        return;
+    }
+
+    if (routeMode)
+    {
+        if (simulation.getTransit().hasBusStop(hovered))
+        {
+            const auto* stop = simulation.getTransit().getBusStop(hovered);
+            if (stop != nullptr)
+            {
+                bool alreadyInRoute = false;
+                for (int id : currentRouteStops)
+                {
+                    if (id == stop->id)
+                    {
+                        alreadyInRoute = true;
+                        break;
+                    }
+                }
+
+                if (alreadyInRoute)
+                {
+                    // Allow loop closing if it matches the first stop and we have >= 2 stops
+                    if (!currentRouteStops.empty() && currentRouteStops.front() == stop->id &&
+                        currentRouteStops.size() >= 2 && currentRouteStops.back() != stop->id)
+                    {
+                        currentRouteStops.push_back(stop->id);
+                        transitMessage = TextFormat("Added Stop #%d to close route loop.", stop->id);
+                        transitMessageTimer = 2.0f;
+                    }
+                    else
+                    {
+                        transitMessage = "Stop is already in current route.";
+                        transitMessageTimer = 2.0f;
+                    }
+                }
+                else
+                {
+                    currentRouteStops.push_back(stop->id);
+                    transitMessage = TextFormat("Added Stop #%d to route (%d total).", stop->id,
+                                                static_cast<int>(currentRouteStops.size()));
+                    transitMessageTimer = 2.0f;
+                }
+            }
         }
         return;
     }
@@ -433,6 +567,20 @@ void Game::drawHighlight()
             {
                 DrawRectangleLinesEx(rect, 2.0f, BLOCKED_BORDER);
             }
+        }
+        return;
+    }
+
+    if (routeMode)
+    {
+        if (simulation.getTransit().hasBusStop(hovered))
+        {
+            DrawRectangle(px, py, tileSize, tileSize, Color{ 255, 230, 50, 120 });
+            DrawRectangleLinesEx(rect, 2.0f, HIGHLIGHT_BORDER);
+        }
+        else
+        {
+            DrawRectangleLinesEx(rect, 2.0f, UNAVAILABLE_BORDER);
         }
         return;
     }
@@ -695,11 +843,80 @@ void Game::drawBusStops()
     }
 }
 
+void Game::drawBusRoutes()
+{
+    const int tileSize = world.getTileSize();
+    const float halfTile = static_cast<float>(tileSize) / 2.0f;
+
+    // Draw saved routes as colored connection lines
+    const auto& routes = simulation.getTransit().getRoutes();
+    const Color routeColors[] = {
+        Color{ 180, 50, 220, 200 },  // Purple
+        Color{ 40, 160, 220, 200 },  // Cyan
+        Color{ 230, 120, 30, 200 },  // Orange
+        Color{ 50, 200, 100, 200 },  // Green
+        Color{ 220, 60, 100, 200 }   // Pink/Red
+    };
+    const size_t numColors = sizeof(routeColors) / sizeof(routeColors[0]);
+
+    for (size_t r = 0; r < routes.size(); ++r)
+    {
+        const auto& route = routes[r];
+        const Color col = routeColors[r % numColors];
+        for (size_t i = 0; i + 1 < route.stopIds.size(); ++i)
+        {
+            const auto* a = simulation.getTransit().getBusStopById(route.stopIds[i]);
+            const auto* b = simulation.getTransit().getBusStopById(route.stopIds[i + 1]);
+            if (a != nullptr && b != nullptr && a->tile.valid && b->tile.valid)
+            {
+                Vector2 start = { a->tile.x * tileSize + halfTile, a->tile.y * tileSize + halfTile };
+                Vector2 end = { b->tile.x * tileSize + halfTile, b->tile.y * tileSize + halfTile };
+                DrawLineEx(start, end, 3.0f, col);
+            }
+        }
+    }
+
+    // If currently editing a route, draw distinct bright lines between selected stops
+    if (routeMode && !currentRouteStops.empty())
+    {
+        for (size_t i = 0; i + 1 < currentRouteStops.size(); ++i)
+        {
+            const auto* a = simulation.getTransit().getBusStopById(currentRouteStops[i]);
+            const auto* b = simulation.getTransit().getBusStopById(currentRouteStops[i + 1]);
+            if (a != nullptr && b != nullptr && a->tile.valid && b->tile.valid)
+            {
+                Vector2 start = { a->tile.x * tileSize + halfTile, a->tile.y * tileSize + halfTile };
+                Vector2 end = { b->tile.x * tileSize + halfTile, b->tile.y * tileSize + halfTile };
+                DrawLineEx(start, end, 4.0f, Color{ 255, 230, 40, 230 });
+            }
+        }
+
+        // Highlight selected stops with yellow circles
+        for (size_t i = 0; i < currentRouteStops.size(); ++i)
+        {
+            const auto* stop = simulation.getTransit().getBusStopById(currentRouteStops[i]);
+            if (stop != nullptr && stop->tile.valid)
+            {
+                DrawCircle(stop->tile.x * tileSize + halfTile, stop->tile.y * tileSize + halfTile,
+                           7.0f, Color{ 255, 220, 0, 200 });
+                DrawCircleLines(stop->tile.x * tileSize + halfTile, stop->tile.y * tileSize + halfTile,
+                                7.0f, DARKBLUE);
+            }
+        }
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
     int y = 10;
     const int step = 26;
+
+    if (!transitMessage.empty())
+    {
+        DrawText(transitMessage.c_str(), 10, y, 20, { 220, 110, 20, 255 });
+        y += step;
+    }
 
     if (hovered.valid)
     {
@@ -756,6 +973,33 @@ void Game::drawDebugText()
         DrawText(TextFormat("Cost: %s (Shift+Click to remove)",
                             formatMoney(urbania::Transit::BUS_STOP_COST).c_str()),
                  10, y, 20, DARKGRAY);
+        y += step;
+    }
+    else if (routeMode)
+    {
+        DrawText("Route Mode", 10, y, 20, { 180, 50, 220, 255 });
+        y += step;
+        DrawText(TextFormat("Stops: %d", static_cast<int>(currentRouteStops.size())), 10, y,
+                 20, DARKGRAY);
+        y += step;
+
+        std::string routeSeq = "Current Route: ";
+        if (currentRouteStops.empty())
+        {
+            routeSeq += "(none - click stops, Enter save, Esc cancel)";
+        }
+        else
+        {
+            for (size_t i = 0; i < currentRouteStops.size(); ++i)
+            {
+                if (i > 0)
+                {
+                    routeSeq += " -> ";
+                }
+                routeSeq += std::to_string(currentRouteStops[i]);
+            }
+        }
+        DrawText(routeSeq.c_str(), 10, y, 20, DARKGRAY);
         y += step;
     }
     else
@@ -962,6 +1206,9 @@ void Game::drawDebugText()
     DrawText(TextFormat("Bus Stops: %d", simulation.getTransit().getBusStopCount()), 10, y,
              20, DARKGRAY);
     y += step;
+    DrawText(TextFormat("Bus Routes: %d", simulation.getTransit().getRouteCount()), 10, y,
+             20, DARKGRAY);
+    y += step;
     DrawText(TextFormat("Congested Roads: %d", simulation.getCongestion().getCongestedRoadCount()),
              10, y, 20, DARKGRAY);
     y += step;
@@ -987,12 +1234,12 @@ void Game::drawDebugText()
                             simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
                  10, y, 20, DARKGRAY);
         y += step;
-        DrawText("Keys: 1-5 select, B bus stop, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, B bus stop, R route (Shift+R del), D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, B bus stop, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, B bus stop, R route (Shift+R del), D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
 }
