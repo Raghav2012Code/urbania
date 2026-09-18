@@ -5,6 +5,7 @@
 #include "simulation/Demand.h"
 #include "simulation/Economy.h"
 #include "simulation/Happiness.h"
+#include "simulation/Housing.h"
 #include "simulation/LandValue.h"
 #include "simulation/Pathfinder.h"
 #include "simulation/Pollution.h"
@@ -265,6 +266,15 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
               LandValue::PARK_LAND_VALUE_BONUS == 15.0f &&
               LandValue::POLLUTION_PENALTY_FACTOR == 0.35f,
           "T16 land value bounds & rates");
+
+    const int hPress = simulation.getHousing().getHousingPressure();
+    const float occRatio = simulation.getHousing().getOccupancyRatio();
+    const bool housingBounds = hPress >= Housing::MIN_HOUSING_PRESSURE &&
+                               hPress <= Housing::MAX_HOUSING_PRESSURE &&
+                               occRatio >= 0.0f && occRatio <= 1.0f;
+    check(housingBounds && Housing::CAPACITY_PER_TILE == 10 &&
+              Housing::MIN_HOUSING_PRESSURE == -100 && Housing::MAX_HOUSING_PRESSURE == 100,
+          "T17 housing capacity & pressure bounds");
 }
 
 bool SelfTest::hasRun() const

@@ -30,6 +30,7 @@ private:
     void drawVehicles();
     void drawPollutionOverlay();
     void drawLandValueOverlay();
+    void drawHousingOverlay();
     void drawDebugText();
     void drawSelfTest();
 
@@ -44,6 +45,7 @@ private:
     bool demolishMode = false;
     bool pollutionOverlay = false;
     bool landValueOverlay = false;
+    bool housingOverlay = false;
 
     // Temporary A* debug test: path between the first and last road
     // tiles, recomputed only when the world changes.

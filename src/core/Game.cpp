@@ -167,6 +167,10 @@ void Game::draw()
     {
         drawLandValueOverlay();
     }
+    if (housingOverlay)
+    {
+        drawHousingOverlay();
+    }
     drawHighlight();
     drawPathTest();
     drawCommutePath();
@@ -221,6 +225,10 @@ void Game::handleSimulationInput()
     else if (IsKeyPressed(KEY_F6))
     {
         landValueOverlay = !landValueOverlay;
+    }
+    else if (IsKeyPressed(KEY_F7))
+    {
+        housingOverlay = !housingOverlay;
     }
     else if (IsKeyPressed(KEY_F9))
     {
@@ -570,6 +578,39 @@ void Game::drawLandValueOverlay()
     }
 }
 
+void Game::drawHousingOverlay()
+{
+    const int tileSize = world.getTileSize();
+    for (const auto& entry : simulation.getHousing().getResidentialGrid())
+    {
+        const urbania::TileCoordinate& coord = entry.first;
+        const int residents = simulation.getPopulation().getResidentsAt(coord.x, coord.y);
+        const int capacity = urbania::Housing::CAPACITY_PER_TILE;
+        const float occ = (capacity > 0)
+                              ? (static_cast<float>(residents) / static_cast<float>(capacity))
+                              : 0.0f;
+
+        // Occupancy visualization:
+        // High (>= 80%): solid vibrant green
+        // Medium (40% - 70%): amber/yellow
+        // Low (< 40%): light blue/cyan
+        Color tint;
+        if (occ >= 0.8f)
+        {
+            tint = { 30, 180, 60, 160 };
+        }
+        else if (occ >= 0.4f)
+        {
+            tint = { 220, 190, 40, 150 };
+        }
+        else
+        {
+            tint = { 80, 170, 230, 130 };
+        }
+        DrawRectangle(coord.x * tileSize, coord.y * tileSize, tileSize, tileSize, tint);
+    }
+}
+
 void Game::drawDebugText()
 {
     const urbania::TileCoordinate hovered = input.hovered();
@@ -584,6 +625,18 @@ void Game::drawDebugText()
                             simulation.getLandValue().getLandValue(hovered.x, hovered.y)),
                  10, y, 20, DARKGRAY);
         y += step;
+        if (world.getTile(hovered.x, hovered.y).type == TileType::Residential)
+        {
+            DrawText(TextFormat("Residents: %d / %d",
+                                simulation.getPopulation().getResidentsAt(hovered.x, hovered.y),
+                                urbania::Housing::CAPACITY_PER_TILE),
+                     10, y, 20, DARKGRAY);
+            y += step;
+            DrawText(TextFormat("Residential Value: %.1f",
+                                simulation.getHousing().getResidentialValue(hovered.x, hovered.y)),
+                     10, y, 20, DARKGRAY);
+            y += step;
+        }
         if (pollutionOverlay)
         {
             DrawText(TextFormat("Tile Pollution: %.1f",
@@ -678,6 +731,11 @@ void Game::drawDebugText()
         DrawText("Land Value Overlay (F6)", 10, y, 20, { 50, 180, 80, 255 });
         y += step;
     }
+    if (housingOverlay)
+    {
+        DrawText("Housing Overlay (F7)", 10, y, 20, { 30, 160, 60, 255 });
+        y += step;
+    }
     DrawText(TextFormat("Average Land Value: %.1f",
                         simulation.getLandValue().getAverageLandValue()),
              10, y, 20, DARKGRAY);
@@ -695,7 +753,7 @@ void Game::drawDebugText()
     else
     {
         DrawText(TextFormat("Speed: %dx", static_cast<int>(simulationClock.getTimeScale())), 10, y,
-                 20, DARKGRAY);
+             20, DARKGRAY);
     }
     y += step;
 
@@ -708,8 +766,19 @@ void Game::drawDebugText()
     DrawText(TextFormat("Happiness: %.1f", simulation.getHappiness().getAverageHappiness()), 10, y,
              20, DARKGRAY);
     y += step;
-    DrawText(TextFormat("Housing: %d / %d", simulation.getPopulation().getTotalPopulation(),
-                        simulation.getPopulation().getTotalHousingCapacity()),
+    DrawText("Housing", 10, y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Capacity: %d", simulation.getHousing().getTotalCapacity()), 10, y,
+             20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Residents: %d", simulation.getHousing().getTotalResidents()), 10, y,
+             20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Occupancy: %.1f%%",
+                        simulation.getHousing().getOccupancyRatio() * 100.0f),
+             10, y, 20, DARKGRAY);
+    y += step;
+    DrawText(TextFormat("  Housing Pressure: %+d", simulation.getHousing().getHousingPressure()),
              10, y, 20, DARKGRAY);
     y += step;
     DrawText(TextFormat("Jobs: %d / %d", simulation.getEmployment().getOccupiedJobs(),
@@ -813,12 +882,12 @@ void Game::drawDebugText()
                             simulation.getCongestion().getCongestion(hovered.x, hovered.y)),
                  10, y, 20, DARKGRAY);
         y += step;
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5 pollution, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
     else
     {
-        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5 pollution, F9 self-test", 10, y,
+        DrawText("Keys: 1-5 select, D demolish, Space pause, F1-F4 speed, F5-F7 overlays, F9 self-test", 10, y,
                  20, DARKGRAY);
     }
 }

@@ -7,6 +7,7 @@
 #include "simulation/Economy.h"
 #include "simulation/Employment.h"
 #include "simulation/Happiness.h"
+#include "simulation/Housing.h"
 #include "simulation/LandValue.h"
 #include "simulation/Pollution.h"
 #include "simulation/Population.h"
@@ -45,6 +46,8 @@ public:
     urbania::Happiness& getHappiness();
     const urbania::LandValue& getLandValue() const;
     urbania::LandValue& getLandValue();
+    const urbania::Housing& getHousing() const;
+    urbania::Housing& getHousing();
 
 private:
     World* world = nullptr;
@@ -60,6 +63,7 @@ private:
     urbania::Pollution pollution;
     urbania::Happiness happiness;
     urbania::LandValue landValue;
+    urbania::Housing housing;
 
     // Development-only counter proving the pipeline runs on
     // simulation time. Not a gameplay mechanic.

@@ -246,6 +246,19 @@ push → confirm the remote matches. No phase starts with a dirty tree.
 - F6 toggles color overlay (green for high land value, red/dark for low); HUD displays
   city-wide average land value and hovered tile land value.
 
+## Phase 24 — Housing and residential value system
+
+- `Housing` (owned by `Simulation`): tracks city-wide and per-tile residential metrics,
+  housing capacity (10 residents per Residential tile), current residents, occupancy ratio,
+  and housing pressure in range [-100, +100] (-100 = excess housing surplus, 0 = balanced,
+  +100 = housing shortage).
+- Residential Value is derived directly from `LandValue` clamped to [0.0, 100.0];
+  nearby parks and pollution automatically reflect on residential desirability.
+- Updates once per simulation hour (every 3,600 sim-seconds) on scaled time; pause halts updates.
+- F7 toggles residential occupancy overlay (low/medium/high occupancy colored tiles);
+  HUD displays detailed housing capacity, residents, occupancy percentage, housing pressure,
+  and hovered residential tile resident counts and residential value.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build
@@ -255,4 +268,5 @@ live in-game checks driven through the actual window (build, demolish,
 pause, speeds, screenshots with pixel checks), a scoped-diff review,
 and a commit + push with remote-HEAD confirmation. Simulation code
 stays raylib-free throughout, proven by grep on every phase.
+
 
