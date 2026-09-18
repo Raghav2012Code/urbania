@@ -7,6 +7,7 @@
 #include "simulation/Citizen.h"
 #include "simulation/CitizenManager.h"
 #include "simulation/Pollution.h"
+#include "simulation/Utilities.h"
 #include "world/World.h"
 
 namespace urbania {
@@ -16,7 +17,7 @@ Happiness::Happiness()
 }
 
 void Happiness::update(const World& world, CitizenManager& citizens, const Pollution& pollution,
-                       float simulationDeltaTime)
+                       const Utilities& utilities, float simulationDeltaTime)
 {
     // Zero or negative delta (e.g. paused) halts simulation progression.
     if (simulationDeltaTime <= 0.0f)
@@ -28,12 +29,12 @@ void Happiness::update(const World& world, CitizenManager& citizens, const Pollu
     while (secondsTowardNextHour >= SIM_SECONDS_PER_HOUR)
     {
         secondsTowardNextHour -= SIM_SECONDS_PER_HOUR;
-        recalculate(world, citizens, pollution);
+        recalculate(world, citizens, pollution, utilities);
     }
 }
 
 void Happiness::recalculate(const World& world, CitizenManager& citizens,
-                            const Pollution& pollution)
+                            const Pollution& pollution, const Utilities& utilities)
 {
     const int count = citizens.getCitizenCount();
     if (count == 0)
@@ -45,7 +46,7 @@ void Happiness::recalculate(const World& world, CitizenManager& citizens,
     float sum = 0.0f;
     for (Citizen& citizen : citizens.getCitizens())
     {
-        citizen.happiness = calculateCitizenHappiness(citizen, world, pollution);
+        citizen.happiness = calculateCitizenHappiness(citizen, world, pollution, utilities);
         sum += citizen.happiness;
     }
 
@@ -58,7 +59,8 @@ float Happiness::getAverageHappiness() const
 }
 
 float Happiness::calculateCitizenHappiness(const Citizen& citizen, const World& world,
-                                           const Pollution& pollution) const
+                                           const Pollution& pollution,
+                                           const Utilities& utilities) const
 {
     float score = BASE_HAPPINESS;
 
@@ -116,6 +118,15 @@ float Happiness::calculateCitizenHappiness(const Citizen& citizen, const World& 
             const float commutePenalty =
                 std::min(MAX_COMMUTE_PENALTY, excess * COMMUTE_PENALTY_PER_STEP);
             score -= commutePenalty;
+        }
+    }
+
+    // 6. Utility services modifier (-20 if home lacks one or more basic utilities)
+    if (validHomeBounds)
+    {
+        if (!utilities.isTileSupplied(citizen.home.x, citizen.home.y))
+        {
+            score += UNPOWERED_UTILITY_PENALTY;
         }
     }
 

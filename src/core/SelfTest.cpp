@@ -13,6 +13,7 @@
 #include "simulation/Simulation.h"
 #include "simulation/Traffic.h"
 #include "simulation/Transit.h"
+#include "simulation/Utilities.h"
 #include "world/Tile.h"
 #include "world/World.h"
 
@@ -383,6 +384,21 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     check(housingBounds && Housing::CAPACITY_PER_TILE == 10 &&
               Housing::MIN_HOUSING_PRESSURE == -100 && Housing::MAX_HOUSING_PRESSURE == 100,
           "T17 housing capacity & pressure bounds");
+
+    const auto& utils = simulation.getUtilities();
+    const bool utilsRatesOk = (Utilities::UTILITY_CONNECTION_RADIUS == 2) &&
+                              (Utilities::DEFAULT_ELECTRICITY_CAPACITY == 100) &&
+                              (Utilities::DEFAULT_WATER_CAPACITY == 100) &&
+                              (Utilities::DEFAULT_SEWAGE_CAPACITY == 100) &&
+                              (Utilities::TOTAL_DAILY_MAINTENANCE == 1100.0f) &&
+                              (Utilities::RESIDENTIAL_ELECTRICITY_DEMAND == 1) &&
+                              (Utilities::COMMERCIAL_ELECTRICITY_DEMAND == 2) &&
+                              (Utilities::INDUSTRIAL_ELECTRICITY_DEMAND == 4) &&
+                              (Happiness::UNPOWERED_UTILITY_PENALTY == -20.0f) &&
+                              (utils.getElectricityCapacity() == 100) &&
+                              (utils.getWaterCapacity() == 100) &&
+                              (utils.getSewageCapacity() == 100);
+    check(utilsRatesOk, "T21 city utilities capacities, demands & maintenance");
 }
 
 bool SelfTest::hasRun() const

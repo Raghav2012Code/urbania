@@ -39,6 +39,7 @@ bool UI::isMouseOverUI() const
 void UI::update(SimulationClock& clock, TileType& selectedBuildType,
                 bool& demolishMode, bool& busStopMode, bool& routeMode,
                 bool& pollutionOverlay, bool& landValueOverlay, bool& housingOverlay,
+                bool& utilitiesOverlay,
                 bool& showDashboard, bool& showSelfTestModal)
 {
     const int sw = GetScreenWidth();
@@ -74,11 +75,12 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
             }
 
             // Overlay Pills
-            if (m.x >= sw - 380 && m.x <= sw - 310 && m.y >= 9 && m.y <= 39) pollutionOverlay = !pollutionOverlay;
-            if (m.x >= sw - 302 && m.x <= sw - 232 && m.y >= 9 && m.y <= 39) landValueOverlay = !landValueOverlay;
-            if (m.x >= sw - 224 && m.x <= sw - 150 && m.y >= 9 && m.y <= 39) housingOverlay = !housingOverlay;
-            if (m.x >= sw - 142 && m.x <= sw - 74 && m.y >= 9 && m.y <= 39) showDashboard = !showDashboard;
-            if (m.x >= sw - 66 && m.x <= sw - 12 && m.y >= 9 && m.y <= 39) showSelfTestModal = !showSelfTestModal;
+            if (m.x >= sw - 440 && m.x <= sw - 374 && m.y >= 9 && m.y <= 39) pollutionOverlay = !pollutionOverlay;
+            if (m.x >= sw - 368 && m.x <= sw - 304 && m.y >= 9 && m.y <= 39) landValueOverlay = !landValueOverlay;
+            if (m.x >= sw - 298 && m.x <= sw - 230 && m.y >= 9 && m.y <= 39) housingOverlay = !housingOverlay;
+            if (m.x >= sw - 224 && m.x <= sw - 146 && m.y >= 9 && m.y <= 39) utilitiesOverlay = !utilitiesOverlay;
+            if (m.x >= sw - 140 && m.x <= sw - 74 && m.y >= 9 && m.y <= 39) showDashboard = !showDashboard;
+            if (m.x >= sw - 68 && m.x <= sw - 12 && m.y >= 9 && m.y <= 39) showSelfTestModal = !showSelfTestModal;
         }
     }
 
@@ -157,6 +159,7 @@ void UI::draw(const World& world, const Simulation& sim,
               const SimulationClock& clock, TileType selectedBuildType,
               bool demolishMode, bool busStopMode, bool routeMode,
               bool pollutionOverlay, bool landValueOverlay, bool housingOverlay,
+              bool utilitiesOverlay,
               bool showDashboard, bool showSelfTestModal,
               const TileCoordinate& hoveredTile,
               const std::vector<int>& currentRouteStops,
@@ -164,7 +167,7 @@ void UI::draw(const World& world, const Simulation& sim,
               const SelfTest& selfTest)
 {
     drawTopRibbon(sim, clock, pollutionOverlay, landValueOverlay, housingOverlay,
-                  showDashboard, showSelfTestModal);
+                  utilitiesOverlay, showDashboard, showSelfTestModal);
     drawDemandMeters(sim);
     drawBottomDock(sim, selectedBuildType, demolishMode, busStopMode, routeMode);
 
@@ -178,7 +181,7 @@ void UI::draw(const World& world, const Simulation& sim,
         drawTileInspector(world, sim, hoveredTile);
     }
 
-    drawOverlayLegends(pollutionOverlay, landValueOverlay, housingOverlay);
+    drawOverlayLegends(sim, pollutionOverlay, landValueOverlay, housingOverlay, utilitiesOverlay);
     const bool hasBanner = demolishMode || busStopMode || routeMode;
     drawModeBanners(demolishMode, busStopMode, routeMode, currentRouteStops);
     drawToast(toastMessage, toastTimer, hasBanner);
@@ -192,6 +195,7 @@ void UI::draw(const World& world, const Simulation& sim,
 
 void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
                        bool pollutionOverlay, bool landValueOverlay, bool housingOverlay,
+                       bool utilitiesOverlay,
                        bool showDashboard, bool showSelfTestModal)
 {
     const int sw = GetScreenWidth();
@@ -276,37 +280,44 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
     // F5 Smog
     const Color smogBg = pollutionOverlay ? Color{ 210, 105, 30, 255 } : Color{ 26, 33, 50, 255 };
     const Color smogText = pollutionOverlay ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 380), static_cast<float>(pillY), 70, static_cast<float>(pillH) }, 0.3f, 4, smogBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 380), static_cast<float>(pillY), 70, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F5 Smog", sw - 373, pillY + 7, 13, smogText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 440), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, smogBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 440), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("F5 Smog", sw - 433, pillY + 7, 13, smogText);
 
     // F6 Land Value
     const Color landBg = landValueOverlay ? Color{ 46, 204, 113, 255 } : Color{ 26, 33, 50, 255 };
     const Color landText = landValueOverlay ? Color{ 10, 25, 15, 255 } : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 302), static_cast<float>(pillY), 70, static_cast<float>(pillH) }, 0.3f, 4, landBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 302), static_cast<float>(pillY), 70, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F6 Land", sw - 295, pillY + 7, 13, landText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 368), static_cast<float>(pillY), 64, static_cast<float>(pillH) }, 0.3f, 4, landBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 368), static_cast<float>(pillY), 64, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("F6 Land", sw - 361, pillY + 7, 13, landText);
 
     // F7 Housing
     const Color houseBg = housingOverlay ? Color{ 52, 152, 219, 255 } : Color{ 26, 33, 50, 255 };
     const Color houseText = housingOverlay ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, houseBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F7 House", sw - 217, pillY + 7, 13, houseText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 298), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, houseBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 298), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("F7 House", sw - 291, pillY + 7, 13, houseText);
+
+    // F8 Utilities
+    const Color utilBg = utilitiesOverlay ? Color{ 0, 180, 240, 255 } : Color{ 26, 33, 50, 255 };
+    const Color utilText = utilitiesOverlay ? Color{ 10, 20, 30, 255 } : Color{ 150, 165, 190, 255 };
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, utilBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 224), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("F8 Utility", sw - 217, pillY + 7, 13, utilText);
 
     // TAB Dashboard
     const Color dashBg = showDashboard ? Color{ 142, 68, 173, 255 } : Color{ 26, 33, 50, 255 };
     const Color dashText = showDashboard ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 142), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, dashBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 142), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("TAB Info", sw - 135, pillY + 7, 13, dashText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 140), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, dashBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 140), static_cast<float>(pillY), 66, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("TAB Info", sw - 133, pillY + 7, 13, dashText);
 
     // F9 SelfTest
     const Color testBg = showSelfTestModal ? Color{ 230, 126, 34, 255 } : Color{ 26, 33, 50, 255 };
     const Color testText = showSelfTestModal ? WHITE : Color{ 150, 165, 190, 255 };
-    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 66), static_cast<float>(pillY), 54, static_cast<float>(pillH) }, 0.3f, 4, testBg);
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 66), static_cast<float>(pillY), 54, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    DrawText("F9 Test", sw - 60, pillY + 7, 13, testText);
+    DrawRectangleRounded(Rectangle{ static_cast<float>(sw - 68), static_cast<float>(pillY), 56, static_cast<float>(pillH) }, 0.3f, 4, testBg);
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(sw - 68), static_cast<float>(pillY), 56, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
+    DrawText("F9 Test", sw - 62, pillY + 7, 13, testText);
 }
 
 void UI::drawDemandMeters(const Simulation& sim)
@@ -532,7 +543,20 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
         DrawText(TextFormat("Average Land Value: %.1f / 100", sim.getLandValue().getAverageLandValue()), x + 16, cy, 13, Color{ 190, 205, 225, 255 });
         cy += 20;
         DrawText(TextFormat("Average Pollution: %.1f ppm", sim.getPollution().getAveragePollution()), x + 16, cy, 13, Color{ 230, 126, 34, 255 });
-        cy += 26;
+        cy += 24;
+
+        DrawText("MUNICIPAL UTILITIES", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
+        cy += 18;
+        DrawText(TextFormat("Power: %d / %d kW • Water: %d / %d kL",
+                            sim.getUtilities().getElectricityDemand(), sim.getUtilities().getElectricityCapacity(),
+                            sim.getUtilities().getWaterDemand(), sim.getUtilities().getWaterCapacity()),
+                 x + 16, cy, 12, WHITE);
+        cy += 18;
+        DrawText(TextFormat("Sewage: %d / %d kL • Supplied: %d / %d",
+                            sim.getUtilities().getSewageDemand(), sim.getUtilities().getSewageCapacity(),
+                            sim.getUtilities().getSuppliedBuildingCount(), sim.getUtilities().getTotalDevelopedBuildingCount()),
+                 x + 16, cy, 12, Color{ 190, 205, 225, 255 });
+        cy += 24;
 
         const int net = static_cast<int>(sim.getEconomy().getNetIncome());
         DrawText("DAILY CASH FLOW", x + 16, cy, 12, Color{ 0, 180, 240, 255 });
@@ -551,7 +575,9 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
         DrawText(TextFormat("Daily Tax Revenue: +%s", formatRupees(static_cast<int>(sim.getEconomy().getTaxIncome())).c_str()), x + 16, cy, 13, Color{ 46, 204, 113, 255 });
         cy += 20;
         DrawText(TextFormat("Municipal Upkeep: -%s", formatRupees(static_cast<int>(sim.getEconomy().getMaintenanceCost())).c_str()), x + 16, cy, 13, Color{ 231, 76, 60, 255 });
-        cy += 24;
+        cy += 18;
+        DrawText(TextFormat(" (Includes Utility Upkeep: -%s)", formatRupees(static_cast<int>(sim.getEconomy().getUtilityMaintenanceCost())).c_str()), x + 16, cy, 11, Color{ 160, 180, 210, 255 });
+        cy += 22;
 
         const int net = static_cast<int>(sim.getEconomy().getNetIncome());
         DrawText(TextFormat("Net Daily Margin: %s%s / day", (net >= 0 ? "+" : "-"), formatRupees(std::abs(net)).c_str()),
@@ -628,6 +654,8 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
         DrawText("• Parks clean smog & boost nearby Land Value", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
         cy += 18;
         DrawText("• Heavy traffic congestion slows commutes", x + 16, cy, 12, Color{ 190, 205, 225, 255 });
+        cy += 18;
+        DrawText("• Unsupplied homes incur -20 happiness penalty", x + 16, cy, 12, Color{ 241, 196, 15, 255 });
         break;
     }
     }
@@ -638,7 +666,7 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
 {
     const int sw = GetScreenWidth();
     const int w = 260;
-    const int h = 175;
+    const int h = 185;
     const int x = sw - w - 16;
     const int y = GetScreenHeight() - h - 94;
 
@@ -708,6 +736,29 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
         cy += 18;
     }
 
+    if (t.type == TileType::Residential || t.type == TileType::Commercial || t.type == TileType::Industrial)
+    {
+        const auto uStatus = sim.getUtilities().getTileStatus(hovered);
+        if (uStatus.isFullySupplied)
+        {
+            DrawText("Utilities: Supplied (P/W/S)", x + 12, cy, 11, Color{ 0, 200, 240, 255 });
+            cy += 18;
+        }
+        else
+        {
+            std::string s = "Utilities: Unsupplied (";
+            if (!uStatus.connected) s += "No Road";
+            else {
+                if (!uStatus.hasElectricity) s += "No Power ";
+                if (!uStatus.hasWater) s += "No Water ";
+                if (!uStatus.hasSewage) s += "No Sewage";
+            }
+            s += ")";
+            DrawText(s.c_str(), x + 12, cy, 11, Color{ 231, 76, 60, 255 });
+            cy += 18;
+        }
+    }
+
     if (sim.getTransit().hasBusStop(hovered))
     {
         const auto* stop = sim.getTransit().getBusStop(hovered);
@@ -744,9 +795,10 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
     }
 }
 
-void UI::drawOverlayLegends(bool pollutionOverlay, bool landValueOverlay, bool housingOverlay)
+void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool landValueOverlay,
+                            bool housingOverlay, bool utilitiesOverlay)
 {
-    if (!pollutionOverlay && !landValueOverlay && !housingOverlay)
+    if (!pollutionOverlay && !landValueOverlay && !housingOverlay && !utilitiesOverlay)
     {
         return;
     }
@@ -754,14 +806,28 @@ void UI::drawOverlayLegends(bool pollutionOverlay, bool landValueOverlay, bool h
     const int x = 16;
     const int y = 230;
     const int w = 150;
-    const int h = 76;
+    const int h = utilitiesOverlay ? 86 : 76;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.1f, 4, Color{ 14, 18, 28, 235 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                               0.1f, 4, Color{ 40, 52, 75, 255 });
 
-    if (pollutionOverlay)
+    if (utilitiesOverlay)
+    {
+        DrawText("UTILITIES (F8)", x + 12, y + 8, 11, Color{ 0, 200, 240, 255 });
+        DrawRectangle(x + 12, y + 26, 12, 12, Color{ 0, 200, 240, 200 });
+        DrawText("Supplied", x + 28, y + 26, 10, Color{ 210, 235, 255, 255 });
+        DrawRectangle(x + 78, y + 26, 12, 12, Color{ 231, 76, 60, 200 });
+        DrawText("Unsupplied", x + 94, y + 26, 10, Color{ 255, 210, 210, 255 });
+        DrawText(TextFormat("Demand: %dE / %dW / %dS", sim.getUtilities().getElectricityDemand(),
+                            sim.getUtilities().getWaterDemand(), sim.getUtilities().getSewageDemand()),
+                 x + 12, y + 46, 10, Color{ 160, 185, 215, 255 });
+        DrawText(TextFormat("Capacity: %d / %d / %d", sim.getUtilities().getElectricityCapacity(),
+                            sim.getUtilities().getWaterCapacity(), sim.getUtilities().getSewageCapacity()),
+                 x + 12, y + 64, 10, Color{ 130, 160, 195, 255 });
+    }
+    else if (pollutionOverlay)
     {
         DrawText("POLLUTION SMOG", x + 12, y + 8, 11, Color{ 230, 126, 34, 255 });
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 60, 140, 80, 200 }, Color{ 180, 40, 40, 255 });

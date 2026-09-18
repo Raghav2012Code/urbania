@@ -33,6 +33,7 @@ private:
     void drawPollutionOverlay();
     void drawLandValueOverlay();
     void drawHousingOverlay();
+    void drawUtilitiesOverlay();
     void drawBusRoutes();
 
     World world;
@@ -54,6 +55,7 @@ private:
     bool pollutionOverlay = false;
     bool landValueOverlay = false;
     bool housingOverlay = false;
+    bool utilitiesOverlay = false;
     bool showDashboard = true;
     bool showSelfTestModal = false;
 

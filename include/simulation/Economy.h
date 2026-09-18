@@ -38,6 +38,12 @@ public:
     static constexpr float INDUSTRIAL_MAINTENANCE = 15.0f;
     static constexpr float PARK_MAINTENANCE = 5.0f;
 
+    // Daily utility maintenance costs.
+    static constexpr float ELECTRICITY_MAINTENANCE = 500.0f;
+    static constexpr float WATER_MAINTENANCE = 300.0f;
+    static constexpr float SEWAGE_MAINTENANCE = 300.0f;
+    static constexpr float UTILITY_MAINTENANCE = ELECTRICITY_MAINTENANCE + WATER_MAINTENANCE + SEWAGE_MAINTENANCE;
+
     static constexpr float SIM_SECONDS_PER_DAY = 86400.0f;
 
     Economy();
@@ -66,6 +72,7 @@ public:
     // Last settled day's figures (zero until the first full day passes).
     float getTaxIncome() const;
     float getMaintenanceCost() const;
+    float getUtilityMaintenanceCost() const;
     float getNetIncome() const;
     float getTotalTaxCollected() const;
     float getTotalMaintenancePaid() const;
@@ -77,6 +84,7 @@ private:
     int money;
     float taxIncome = 0.0f;
     float maintenanceCost = 0.0f;
+    float utilityMaintenance = UTILITY_MAINTENANCE;
     float netIncome = 0.0f;
     float totalTaxCollected = 0.0f;
     float totalMaintenancePaid = 0.0f;

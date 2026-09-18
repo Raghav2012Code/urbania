@@ -157,6 +157,11 @@ float Economy::getMaintenanceCost() const
     return maintenanceCost;
 }
 
+float Economy::getUtilityMaintenanceCost() const
+{
+    return utilityMaintenance;
+}
+
 float Economy::getNetIncome() const
 {
     return netIncome;
@@ -176,8 +181,8 @@ void Economy::settleDay(const World& world, const Population& population,
                         const urbania::Employment& employment)
 {
     // Maintenance from currently existing tiles (counted live, no extra
-    // Tile fields).
-    float maintenance = 0.0f;
+    // Tile fields) plus fixed municipal utility infrastructure maintenance.
+    float maintenance = UTILITY_MAINTENANCE;
     for (int y = 0; y < world.getHeight(); ++y)
     {
         for (int x = 0; x < world.getWidth(); ++x)

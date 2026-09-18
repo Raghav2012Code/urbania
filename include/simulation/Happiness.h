@@ -9,10 +9,11 @@ namespace urbania {
 class Citizen;
 class CitizenManager;
 class Pollution;
+class Utilities;
 
 // City citizen happiness system.
 // Calculates individual citizen happiness in range [0.0f, 100.0f]
-// based on employment, nearby parks, commute routes, pollution, and housing.
+// based on employment, nearby parks, commute routes, pollution, housing, and utilities.
 //
 // 0.0f   = extremely unhappy
 // 50.0f  = neutral base
@@ -38,21 +39,24 @@ public:
     static constexpr float VALID_HOUSING_BONUS = 5.0f;
     static constexpr float INVALID_HOUSING_PENALTY = -20.0f;
 
+    static constexpr float UNPOWERED_UTILITY_PENALTY = -20.0f;
+
     static constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
 
     Happiness();
 
     void update(const World& world, CitizenManager& citizens, const Pollution& pollution,
-                float simulationDeltaTime);
+                const Utilities& utilities, float simulationDeltaTime);
 
     // Forces an immediate recalculation of all citizens' happiness.
-    void recalculate(const World& world, CitizenManager& citizens, const Pollution& pollution);
+    void recalculate(const World& world, CitizenManager& citizens, const Pollution& pollution,
+                     const Utilities& utilities);
 
     float getAverageHappiness() const;
 
 private:
     float calculateCitizenHappiness(const Citizen& citizen, const World& world,
-                                    const Pollution& pollution) const;
+                                    const Pollution& pollution, const Utilities& utilities) const;
     bool hasNearbyPark(int homeX, int homeY, const World& world) const;
 
     float averageHappiness = BASE_HAPPINESS;

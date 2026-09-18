@@ -34,6 +34,7 @@ public:
     void update(SimulationClock& clock, TileType& selectedBuildType,
                 bool& demolishMode, bool& busStopMode, bool& routeMode,
                 bool& pollutionOverlay, bool& landValueOverlay, bool& housingOverlay,
+                bool& utilitiesOverlay,
                 bool& showDashboard, bool& showSelfTestModal);
 
     // Renders the entire Screen-Space HUD
@@ -41,6 +42,7 @@ public:
               const SimulationClock& clock, TileType selectedBuildType,
               bool demolishMode, bool busStopMode, bool routeMode,
               bool pollutionOverlay, bool landValueOverlay, bool housingOverlay,
+              bool utilitiesOverlay,
               bool showDashboard, bool showSelfTestModal,
               const TileCoordinate& hoveredTile,
               const std::vector<int>& currentRouteStops,
@@ -53,6 +55,7 @@ public:
 private:
     void drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
                        bool pollutionOverlay, bool landValueOverlay, bool housingOverlay,
+                       bool utilitiesOverlay,
                        bool showDashboard, bool showSelfTestModal);
     void drawDemandMeters(const Simulation& sim);
     void drawBottomDock(const Simulation& sim, TileType selectedBuildType,
@@ -60,7 +63,8 @@ private:
     void drawDashboard(const World& world, const Simulation& sim);
     void drawTileInspector(const World& world, const Simulation& sim,
                            const TileCoordinate& hovered);
-    void drawOverlayLegends(bool pollutionOverlay, bool landValueOverlay, bool housingOverlay);
+    void drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool landValueOverlay,
+                            bool housingOverlay, bool utilitiesOverlay);
     void drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
                          const std::vector<int>& currentRouteStops);
     void drawToast(const std::string& msg, float timer, bool hasBanner);

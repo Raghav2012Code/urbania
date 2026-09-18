@@ -63,7 +63,7 @@ void Game::update(float deltaTime)
 
     ui.update(simulationClock, selectedBuildType, demolishMode, busStopMode,
               routeMode, pollutionOverlay, landValueOverlay, housingOverlay,
-              showDashboard, showSelfTestModal);
+              utilitiesOverlay, showDashboard, showSelfTestModal);
 
     simulationClock.update(deltaTime);
     simulation.update(simulationClock.getSimulationDeltaTime());
@@ -106,6 +106,10 @@ void Game::draw()
     {
         drawHousingOverlay();
     }
+    if (utilitiesOverlay)
+    {
+        drawUtilitiesOverlay();
+    }
     drawHighlight();
     drawPathTest();
     drawCommutePath();
@@ -117,7 +121,7 @@ void Game::draw()
     // 2. Screen Space UI & HUD
     ui.draw(world, simulation, simulationClock, selectedBuildType, demolishMode,
             busStopMode, routeMode, pollutionOverlay, landValueOverlay,
-            housingOverlay, showDashboard, showSelfTestModal, input.hovered(),
+            housingOverlay, utilitiesOverlay, showDashboard, showSelfTestModal, input.hovered(),
             currentRouteStops, transitMessage, transitMessageTimer, selfTest);
 }
 
@@ -168,6 +172,10 @@ void Game::handleSimulationInput()
     else if (IsKeyPressed(KEY_F7))
     {
         housingOverlay = !housingOverlay;
+    }
+    else if (IsKeyPressed(KEY_F8))
+    {
+        utilitiesOverlay = !utilitiesOverlay;
     }
     else if (IsKeyPressed(KEY_TAB))
     {
@@ -629,6 +637,35 @@ void Game::drawHousingOverlay()
             tint = { 80, 170, 230, 130 };
         }
         DrawRectangle(coord.x * tileSize, coord.y * tileSize, tileSize, tileSize, tint);
+    }
+}
+
+void Game::drawUtilitiesOverlay()
+{
+    const int tileSize = world.getTileSize();
+    for (const auto& entry : simulation.getUtilities().getStatusGrid())
+    {
+        const urbania::TileCoordinate& coord = entry.first;
+        const auto& status = entry.second;
+
+        Color tint;
+        if (status.isFullySupplied)
+        {
+            tint = { 0, 200, 240, 140 };
+        }
+        else
+        {
+            tint = { 231, 76, 60, 160 };
+        }
+
+        DrawRectangle(coord.x * tileSize, coord.y * tileSize, tileSize, tileSize, tint);
+        DrawRectangleLinesEx(Rectangle{ static_cast<float>(coord.x * tileSize),
+                                        static_cast<float>(coord.y * tileSize),
+                                        static_cast<float>(tileSize),
+                                        static_cast<float>(tileSize) },
+                             1.0f,
+                             status.isFullySupplied ? Color{ 50, 230, 255, 200 }
+                                                    : Color{ 255, 100, 80, 220 });
     }
 }
 

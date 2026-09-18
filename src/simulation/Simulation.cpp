@@ -18,8 +18,10 @@ bool Simulation::initialize(World& world)
     demand = Demand();
     demand.recalculate(world, population, employment);
     pollution = urbania::Pollution();
+    utilities = urbania::Utilities();
+    utilities.recalculate(world);
     happiness = urbania::Happiness();
-    happiness.recalculate(world, population.getCitizenManager(), pollution);
+    happiness.recalculate(world, population.getCitizenManager(), pollution, utilities);
     landValue = urbania::LandValue();
     landValue.recalculate(world, pollution, congestion);
     housing = urbania::Housing();
@@ -53,7 +55,8 @@ void Simulation::update(float simulationDeltaTime)
     economy.update(*world, population, employment, simulationDeltaTime);
     demand.update(*world, population, employment, simulationDeltaTime);
     pollution.update(*world, simulationDeltaTime);
-    happiness.update(*world, population.getCitizenManager(), pollution, simulationDeltaTime);
+    utilities.update(*world, simulationDeltaTime);
+    happiness.update(*world, population.getCitizenManager(), pollution, utilities, simulationDeltaTime);
     landValue.update(*world, pollution, congestion, simulationDeltaTime);
     housing.update(*world, population, landValue, simulationDeltaTime);
     transit.syncWithWorld(*world);
@@ -64,7 +67,7 @@ void Simulation::update(float simulationDeltaTime)
     {
         demand.recalculate(*world, population, employment);
         housing.recalculate(*world, population, landValue);
-        happiness.recalculate(*world, population.getCitizenManager(), pollution);
+        happiness.recalculate(*world, population.getCitizenManager(), pollution, utilities);
     }
 }
 
@@ -80,10 +83,11 @@ void Simulation::onWorldModified()
     employment.update(*world, population.getCitizenManager(), 0.0f);
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     transit.syncWithWorld(*world);
+    utilities.recalculate(*world);
     demand.recalculate(*world, population, employment);
     landValue.recalculate(*world, pollution, congestion);
     housing.recalculate(*world, population, landValue);
-    happiness.recalculate(*world, population.getCitizenManager(), pollution);
+    happiness.recalculate(*world, population.getCitizenManager(), pollution, utilities);
 }
 
 void Simulation::shutdown()
@@ -206,6 +210,12 @@ urbania::Transit& Simulation::getTransit()
     return transit;
 }
 
+const urbania::Utilities& Simulation::getUtilities() const
+{
+    return utilities;
+}
 
-
-
+urbania::Utilities& Simulation::getUtilities()
+{
+    return utilities;
+}
