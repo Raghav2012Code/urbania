@@ -69,7 +69,11 @@ public:
     void update(const World& world, const Population& population,
                 const urbania::Employment& employment, float simulationDeltaTime);
 
-    // Last settled day's figures (zero until the first full day passes).
+    // Recalculates projected tax revenue, municipal upkeep, and net daily margin.
+    void recalculate(const World& world, const Population& population,
+                     const urbania::Employment& employment);
+
+    // Current daily ledger figures.
     float getTaxIncome() const;
     float getMaintenanceCost() const;
     float getUtilityMaintenanceCost() const;

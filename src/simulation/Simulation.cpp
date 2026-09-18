@@ -15,6 +15,7 @@ bool Simulation::initialize(World& world)
     traffic = urbania::Traffic();
     congestion = urbania::Congestion();
     economy = Economy();
+    economy.recalculate(world, population, employment);
     demand = Demand();
     demand.recalculate(world, population, employment);
     pollution = urbania::Pollution();
@@ -65,6 +66,7 @@ void Simulation::update(float simulationDeltaTime)
     if (population.getTotalPopulation() != popBefore ||
         employment.getEmployedCitizens() != empBefore)
     {
+        economy.recalculate(*world, population, employment);
         demand.recalculate(*world, population, employment);
         housing.recalculate(*world, population, landValue);
         happiness.recalculate(*world, population.getCitizenManager(), pollution, utilities);
@@ -84,6 +86,7 @@ void Simulation::onWorldModified()
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     transit.syncWithWorld(*world);
     utilities.recalculate(*world);
+    economy.recalculate(*world, population, employment);
     demand.recalculate(*world, population, employment);
     landValue.recalculate(*world, pollution, congestion);
     housing.recalculate(*world, population, landValue);

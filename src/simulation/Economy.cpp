@@ -177,11 +177,9 @@ float Economy::getTotalMaintenancePaid() const
     return totalMaintenancePaid;
 }
 
-void Economy::settleDay(const World& world, const Population& population,
-                        const urbania::Employment& employment)
+void Economy::recalculate(const World& world, const Population& population,
+                          const urbania::Employment& employment)
 {
-    // Maintenance from currently existing tiles (counted live, no extra
-    // Tile fields) plus fixed municipal utility infrastructure maintenance.
     float maintenance = UTILITY_MAINTENANCE;
     for (int y = 0; y < world.getHeight(); ++y)
     {
@@ -191,12 +189,9 @@ void Economy::settleDay(const World& world, const Population& population,
         }
     }
 
-    // Citizen tax from every active citizen.
     const float citizenTax =
         static_cast<float>(population.getTotalPopulation()) * RESIDENTIAL_TAX_PER_CITIZEN;
 
-    // Workplace tax from occupied jobs only, typed by the live World tile
-    // under each job (no duplicated job data).
     float commercialJobs = 0.0f;
     float industrialJobs = 0.0f;
     for (const urbania::Job& job : employment.getJobs())
@@ -228,14 +223,17 @@ void Economy::settleDay(const World& world, const Population& population,
     taxIncome = tax;
     maintenanceCost = maintenance;
     netIncome = net;
-    totalTaxCollected += tax;
-    totalMaintenancePaid += maintenance;
+}
 
-    // Net Income = Tax Income - Maintenance; Money += Net Income.
-    // Construction stays an immediate expense elsewhere. Money never
-    // goes negative: clamp at zero and keep the deficit visible via the
-    // daily net-income statistic. No bankruptcy mechanics yet.
-    const int netRounded = static_cast<int>(net);
+void Economy::settleDay(const World& world, const Population& population,
+                        const urbania::Employment& employment)
+{
+    recalculate(world, population, employment);
+
+    totalTaxCollected += taxIncome;
+    totalMaintenancePaid += maintenanceCost;
+
+    const int netRounded = static_cast<int>(netIncome);
     if (money + netRounded < 0)
     {
         money = 0;
