@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "request": "launch",
+            "name": "Run Urbania",
+            "target": "${workspaceFolder}/build/Urbania.exe",
+            "cwd": "${workspaceFolder}",
+            "gdbpath": "F:/msys64/ucrt64/bin/gdb.exe",
+            "preLaunchTask": "build"
+        }
+    ]
+}
