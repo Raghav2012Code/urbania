@@ -70,7 +70,8 @@ private:
                         bool demolishMode, bool busStopMode, bool routeMode);
     void drawDashboard(const World& world, const Simulation& sim);
     void drawTileInspector(const World& world, const Simulation& sim,
-                           const TileCoordinate& hovered);
+                           const TileCoordinate& hovered, bool dashboardOpen);
+    void drawNewCityHint(const Simulation& sim);
     void drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool landValueOverlay,
                             bool housingOverlay, bool utilitiesOverlay);
     void drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,

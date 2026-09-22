@@ -314,8 +314,7 @@ void Game::handleBuildInput()
     if (routeMode)
     {
         if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER))
-        {
-            if (currentRouteStops.size() < urbania::Transit::MIN_ROUTE_STOPS)
+        {            if (currentRouteStops.size() < urbania::Transit::MIN_ROUTE_STOPS)
             {
                 transitMessage = "Route needs at least 2 stops.";
                 transitMessageTimer = 3.0f;
@@ -337,9 +336,29 @@ void Game::handleBuildInput()
         }
         else if (IsKeyPressed(KEY_ESCAPE))
         {
-            currentRouteStops.clear();
-            transitMessage = "Cancelled current route draft.";
+            if (currentRouteStops.empty())
+            {
+                routeMode = false;
+                transitMessage = "Exited route mode.";
+            }
+            else
+            {
+                currentRouteStops.clear();
+                transitMessage = "Cancelled current route draft.";
+            }
             transitMessageTimer = 2.0f;
+        }
+    }
+
+    // Escape exits any placement/demolish mode (banners advertise [Esc]).
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+        if (demolishMode || busStopMode)
+        {
+            demolishMode = false;
+            busStopMode = false;
+            transitMessage = "Tool deselected.";
+            transitMessageTimer = 1.5f;
         }
     }
 
@@ -369,6 +388,13 @@ void Game::handleBuildInput()
             {
                 simulation.onWorldModified();
                 pathTestDirty = true;
+                transitMessage = "Removed bus stop.";
+                transitMessageTimer = 2.0f;
+            }
+            else
+            {
+                transitMessage = "No bus stop here to remove.";
+                transitMessageTimer = 2.0f;
             }
         }
         else
@@ -377,6 +403,19 @@ void Game::handleBuildInput()
             {
                 simulation.onWorldModified();
                 pathTestDirty = true;
+                transitMessage = "Bus stop placed (Rs. 500).";
+                transitMessageTimer = 2.0f;
+            }
+            else if (world.getTile(hovered.x, hovered.y).type != TileType::Road ||
+                     simulation.getTransit().hasBusStop(hovered))
+            {
+                transitMessage = "Bus stops go on free road tiles.";
+                transitMessageTimer = 2.0f;
+            }
+            else
+            {
+                transitMessage = "Insufficient funds (need Rs. 500).";
+                transitMessageTimer = 2.0f;
             }
         }
         return;
@@ -432,10 +471,29 @@ void Game::handleBuildInput()
     if (demolishMode)
     {
         changed = simulation.getEconomy().tryDemolish(tile);
+        if (!changed)
+        {
+            transitMessage = "Nothing to demolish here.";
+            transitMessageTimer = 2.0f;
+        }
     }
     else
     {
         changed = simulation.getEconomy().tryBuild(tile, selectedBuildType);
+        if (!changed)
+        {
+            if (tile.type != TileType::Grass)
+            {
+                transitMessage = "Tile is occupied.";
+                transitMessageTimer = 2.0f;
+            }
+            else
+            {
+                transitMessage = TextFormat("Insufficient funds (need Rs. %d).",
+                                            Economy::getCost(selectedBuildType));
+                transitMessageTimer = 2.0f;
+            }
+        }
     }
 
     if (changed)

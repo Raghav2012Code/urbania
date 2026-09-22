@@ -226,7 +226,7 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
     if (showDashboard)
     {
         const int dw = 360;
-        const int dh = 500;
+        const int dh = 330;
         const int dx = sw - dw - 16;
         const int dy = 60;
 
@@ -288,8 +288,10 @@ void UI::draw(const World& world, const Simulation& sim,
 
     if (hoveredTile.valid && !mouseOverUI)
     {
-        drawTileInspector(world, sim, hoveredTile);
+        drawTileInspector(world, sim, hoveredTile, showDashboard);
     }
+
+    drawNewCityHint(sim);
 
     drawOverlayLegends(sim, pollutionOverlay, landValueOverlay, housingOverlay, utilitiesOverlay);
     const bool hasBanner = demolishMode || busStopMode || routeMode;
@@ -330,12 +332,21 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
     const bool isPaused = clock.isPaused();
     const float speed = clock.getTimeScale();
 
-    // Pause button
-    const Color pauseBg = isPaused ? Color{ 220, 50, 50, 255 } : Color{ 26, 33, 50, 255 };
-    const Color pauseText = isPaused ? WHITE : Color{ 150, 165, 190, 255 };
+    // Pause / resume button: red "pause" bars while running, green
+    // "play" triangle while paused, so the two states are unmistakable
+    // without relying on the F-key shortcut.
+    const Color pauseBg = isPaused ? Color{ 46, 160, 80, 255 } : Color{ 26, 33, 50, 255 };
     DrawRectangleRounded(Rectangle{ 320, 9, 42, 32 }, 0.3f, 4, pauseBg);
     DrawRectangleRoundedLines(Rectangle{ 320, 9, 42, 32 }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("||", 341, 25, 15, pauseText, true);
+    if (isPaused)
+    {
+        DrawTriangle(Vector2{ 334.0f, 15.0f }, Vector2{ 334.0f, 35.0f }, Vector2{ 350.0f, 25.0f },
+                     WHITE);
+    }
+    else
+    {
+        drawTextCentered("||", 341, 25, 15, Color{ 150, 165, 190, 255 }, true);
+    }
 
     // Speed buttons: 1x, 2x, 4x, 8x
     const float speeds[] = { 1.0f, 2.0f, 4.0f, 8.0f };
@@ -643,7 +654,7 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
     (void)world;
     const int sw = GetScreenWidth();
     const int w = 360;
-    const int h = 500;
+    const int h = 330;
     const int x = sw - w - 16;
     const int y = 60;
 
@@ -657,7 +668,7 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
     drawText("[TAB to Close]", x + w - 100, y + 14, 12, Color{ 120, 140, 175, 255 });
 
     // Tab switcher
-    const char* tabNames[5] = { "Overview", "Economy", "People", "Transit", "Eco" };
+    const char* tabNames[5] = { "Overview", "Economy", "People", "Transit", "Environ" };
     const int tabW = (w - 24) / 5;
     for (int t = 0; t < 5; ++t)
     {
@@ -809,20 +820,141 @@ void UI::drawDashboard(const World& world, const Simulation& sim)
 }
 
 void UI::drawTileInspector(const World& world, const Simulation& sim,
-                           const TileCoordinate& hovered)
+                           const TileCoordinate& hovered, bool dashboardOpen)
 {
+    struct InfoRow {
+        std::string text;
+        Color color;
+    };
+    std::vector<InfoRow> rows;
+
+    const Tile& t = world.getTile(hovered.x, hovered.y);
+
+    // Land value applies to every tile.
+    const float lv = sim.getLandValue().getLandValue(hovered.x, hovered.y);
+    rows.push_back({ TextFormat("Land Value: %.0f / 100", lv), Color{ 190, 205, 225, 255 } });
+
+    if (t.type == TileType::Residential)
+    {
+        const int res = sim.getPopulation().getResidentsAt(hovered.x, hovered.y);
+        rows.push_back({ TextFormat("Residents: %d / %d", res, Housing::CAPACITY_PER_TILE),
+                         Color{ 52, 152, 219, 255 } });
+        // Average happiness of the residents living on this tile.
+        float happySum = 0.0f;
+        int happyCount = 0;
+        for (const auto& c : sim.getPopulation().getCitizens().getCitizens())
+        {
+            if (c.home.valid && c.home.x == hovered.x && c.home.y == hovered.y)
+            {
+                happySum += c.happiness;
+                ++happyCount;
+            }
+        }
+        if (happyCount > 0)
+        {
+            rows.push_back({ TextFormat("Happiness: %.0f%%", happySum / happyCount),
+                             Color{ 46, 204, 113, 255 } });
+        }
+    }
+    else if (t.type == TileType::Commercial || t.type == TileType::Industrial)
+    {
+        int jobs = 0;
+        int filled = 0;
+        for (const auto& job : sim.getEmployment().getJobs())
+        {
+            if (job.workplace.valid && job.workplace.x == hovered.x && job.workplace.y == hovered.y)
+            {
+                ++jobs;
+                if (job.occupied)
+                {
+                    ++filled;
+                }
+            }
+        }
+        const Color jobCol = (t.type == TileType::Commercial) ? Color{ 240, 160, 40, 255 }
+                                                              : Color{ 230, 126, 34, 255 };
+        rows.push_back({ TextFormat("Jobs: %d / %d filled", filled, jobs), jobCol });
+    }
+    else if (t.type == TileType::Road)
+    {
+        const int vCount = sim.getCongestion().getVehicleCount(hovered.x, hovered.y);
+        const float cong = sim.getCongestion().getCongestion(hovered.x, hovered.y);
+        rows.push_back({ TextFormat("Traffic: %d / %d (%.1fx delay)", vCount,
+                                    urbania::Congestion::getCapacity(), cong),
+                         (cong > 1.0f ? Color{ 231, 76, 60, 255 } : Color{ 190, 205, 225, 255 }) });
+    }
+    else if (t.type == TileType::Park)
+    {
+        rows.push_back({ "Park: +15 land value, cleans smog", Color{ 46, 204, 113, 255 } });
+    }
+
+    if (t.type == TileType::Residential || t.type == TileType::Commercial ||
+        t.type == TileType::Industrial)
+    {
+        const auto uStatus = sim.getUtilities().getTileStatus(hovered);
+        if (uStatus.isFullySupplied)
+        {
+            rows.push_back({ "Utilities: SUPPLIED", Color{ 0, 200, 240, 255 } });
+        }
+        else
+        {
+            std::string reason = "No road nearby";
+            if (uStatus.connected)
+            {
+                reason = "City capacity full";
+            }
+            rows.push_back({ "Utilities: UNSUPPLIED", Color{ 231, 76, 60, 255 } });
+            rows.push_back({ "(" + reason + ")", Color{ 200, 150, 150, 255 } });
+        }
+    }
+
+    if (sim.getTransit().hasBusStop(hovered))
+    {
+        const auto* stop = sim.getTransit().getBusStop(hovered);
+        if (stop != nullptr)
+        {
+            rows.push_back({ TextFormat("Bus Stop #%d", stop->id), Color{ 255, 215, 0, 255 } });
+        }
+    }
+
+    for (const auto& bus : sim.getTransit().getBuses())
+    {
+        if (bus.active && !bus.path.empty() && bus.pathIndex >= 0 &&
+            bus.pathIndex < static_cast<int>(bus.path.size()))
+        {
+            const auto& bTile = bus.path[bus.pathIndex];
+            if (bTile.x == hovered.x && bTile.y == hovered.y)
+            {
+                const auto* r = sim.getTransit().getRoute(bus.routeId);
+                const int total = (r != nullptr) ? static_cast<int>(r->stopIds.size()) : 0;
+                rows.push_back({ TextFormat("Bus #%d • Route #%d (%d/%d stops)", bus.id,
+                                            bus.routeId, bus.currentStopIndex + 1, total),
+                                 Color{ 255, 215, 0, 255 } });
+                break;
+            }
+        }
+    }
+
+    const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
+    if (p > 0.01f)
+    {
+        rows.push_back({ TextFormat("Pollution: %.0f ppm", p), Color{ 230, 126, 34, 255 } });
+    }
+
+    // Panel sizes itself to the content: no more half-empty boxes, and the
+    // longest row ("Utilities: UNSUPPLIED") always fits inside.
     const int sw = GetScreenWidth();
     const int w = 270;
-    const int h = 195;
-    const int x = sw - w - 16;
+    const int h = 48 + static_cast<int>(rows.size()) * 20 + 10;
+    // Dock left of the dashboard while it is open so the two never overlap.
+    const int x = dashboardOpen ? (sw - w - 16 - 360 - 12) : (sw - w - 16);
     const int y = GetScreenHeight() - h - 94;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                         0.1f, 4, Color{ 14, 18, 28, 245 });
+                          0.1f, 4, Color{ 14, 18, 28, 245 });
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
-                              0.1f, 4, Color{ 40, 52, 75, 255 });
+                               0.1f, 4, Color{ 40, 52, 75, 255 });
 
-    const Tile& t = world.getTile(hovered.x, hovered.y);
     int cy = y + 10;
 
     // Header with Zone Badge
@@ -847,98 +979,10 @@ void UI::drawTileInspector(const World& world, const Simulation& sim,
     DrawLine(x + 10, cy, x + w - 10, cy, Color{ 35, 48, 70, 255 });
     cy += 10;
 
-    // Land Value
-    const float lv = sim.getLandValue().getLandValue(hovered.x, hovered.y);
-    drawText(TextFormat("Land Value: %.1f / 100", lv), x + 12, cy, 13, Color{ 190, 205, 225, 255 });
-    cy += 20;
-
-    // Specific tile metrics
-    if (t.type == TileType::Residential)
+    for (const auto& row : rows)
     {
-        const int res = sim.getPopulation().getResidentsAt(hovered.x, hovered.y);
-        drawText(TextFormat("Residents: %d / %d", res, Housing::CAPACITY_PER_TILE), x + 12, cy, 13, Color{ 52, 152, 219, 255 });
+        drawText(row.text.c_str(), x + 12, cy, 13, row.color);
         cy += 20;
-    }
-    else if (t.type == TileType::Commercial)
-    {
-        drawText("Commercial Shop: Active", x + 12, cy, 13, Color{ 240, 160, 40, 255 });
-        cy += 20;
-    }
-    else if (t.type == TileType::Industrial)
-    {
-        const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
-        drawText(TextFormat("Smog Output: %.1f ppm", p), x + 12, cy, 13, Color{ 230, 126, 34, 255 });
-        cy += 20;
-    }
-    else if (t.type == TileType::Road)
-    {
-        const int vCount = sim.getCongestion().getVehicleCount(hovered.x, hovered.y);
-        const float cong = sim.getCongestion().getCongestion(hovered.x, hovered.y);
-        drawText(TextFormat("Traffic: %d / 5 (%.1fx delay)", vCount, cong), x + 12, cy, 13, (cong > 1.0f ? Color{ 231, 76, 60, 255 } : Color{ 190, 205, 225, 255 }));
-        cy += 20;
-    }
-    else if (t.type == TileType::Park)
-    {
-        drawText("Park: +15 Land Value Bonus", x + 12, cy, 13, Color{ 46, 204, 113, 255 });
-        cy += 20;
-    }
-
-    if (t.type == TileType::Residential || t.type == TileType::Commercial || t.type == TileType::Industrial)
-    {
-        const auto uStatus = sim.getUtilities().getTileStatus(hovered);
-        if (uStatus.isFullySupplied)
-        {
-            drawText("Utilities: Supplied (Power/Water/Sewage)", x + 12, cy, 12, Color{ 0, 200, 240, 255 });
-            cy += 20;
-        }
-        else
-        {
-            std::string s = "Utilities: Unsupplied (";
-            if (!uStatus.connected) s += "No Road";
-            else {
-                if (!uStatus.hasElectricity) s += "No Power ";
-                if (!uStatus.hasWater) s += "No Water ";
-                if (!uStatus.hasSewage) s += "No Sewage";
-            }
-            s += ")";
-            drawText(s.c_str(), x + 12, cy, 12, Color{ 231, 76, 60, 255 });
-            cy += 20;
-        }
-    }
-
-    if (sim.getTransit().hasBusStop(hovered))
-    {
-        const auto* stop = sim.getTransit().getBusStop(hovered);
-        if (stop != nullptr)
-        {
-            drawText(TextFormat("Transit: Bus Stop #%d", stop->id), x + 12, cy, 13, Color{ 255, 215, 0, 255 }, true);
-            cy += 20;
-        }
-    }
-
-    for (const auto& bus : sim.getTransit().getBuses())
-    {
-        if (bus.active && !bus.path.empty() && bus.pathIndex >= 0 &&
-            bus.pathIndex < static_cast<int>(bus.path.size()))
-        {
-            const auto& bTile = bus.path[bus.pathIndex];
-            if (bTile.x == hovered.x && bTile.y == hovered.y)
-            {
-                const auto* r = sim.getTransit().getRoute(bus.routeId);
-                const int total = (r != nullptr) ? static_cast<int>(r->stopIds.size()) : 0;
-                drawText(TextFormat("Bus #%d • Route #%d (Stop %d/%d)", bus.id, bus.routeId,
-                                    bus.currentStopIndex + 1, total),
-                         x + 12, cy, 12, Color{ 255, 215, 0, 255 });
-                cy += 20;
-                break;
-            }
-        }
-    }
-
-    const float p = sim.getPollution().getPollution(hovered.x, hovered.y);
-    if (p > 0.01f)
-    {
-        drawText(TextFormat("Air Pollution: %.1f ppm", p), x + 12, cy, 13, Color{ 230, 126, 34, 255 });
     }
 }
 
@@ -976,21 +1020,21 @@ void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool l
     }
     else if (pollutionOverlay)
     {
-        drawText("POLLUTION SMOG", x + 12, y + 8, 12, Color{ 230, 126, 34, 255 }, true);
+        drawText("SMOG (F7)", x + 12, y + 8, 12, Color{ 230, 126, 34, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 60, 140, 80, 200 }, Color{ 180, 40, 40, 255 });
         drawText("0 Clean", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
         drawText("100ppm", x + w - 56, y + 46, 11, Color{ 160, 180, 200, 255 });
     }
     else if (landValueOverlay)
     {
-        drawText("LAND VALUE", x + 12, y + 8, 12, Color{ 46, 204, 113, 255 }, true);
+        drawText("LAND VALUE (F8)", x + 12, y + 8, 12, Color{ 46, 204, 113, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 180, 40, 40, 200 }, Color{ 46, 204, 113, 255 });
         drawText("0 Low", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
         drawText("100 High", x + w - 58, y + 46, 11, Color{ 160, 180, 200, 255 });
     }
     else if (housingOverlay)
     {
-        drawText("HOUSING OCCUPANCY", x + 12, y + 8, 12, Color{ 52, 152, 219, 255 }, true);
+        drawText("HOUSING (F9)", x + 12, y + 8, 12, Color{ 52, 152, 219, 255 }, true);
         DrawRectangleGradientH(x + 12, y + 26, w - 24, 12, Color{ 52, 152, 219, 200 }, Color{ 231, 76, 60, 255 });
         drawText("0% Empty", x + 12, y + 46, 11, Color{ 160, 180, 200, 255 });
         drawText("100% Full", x + w - 60, y + 46, 11, Color{ 160, 180, 200, 255 });
@@ -1030,7 +1074,7 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
                                   0.25f, 4, Color{ 255, 215, 0, 255 });
 
         drawText("BUS STOP PLACEMENT", x + 16, y + 8, 14, Color{ 255, 225, 60, 255 }, true);
-        drawText("Click road tiles to place stop (Rs. 500) • [Shift+Click] Remove • [B] Exit", x + 16, y + 26, 12, Color{ 210, 235, 255, 255 });
+        drawText("Click road tiles to place stop (Rs. 500) • [Shift+Click] Remove • [B]/[Esc] Exit", x + 16, y + 26, 12, Color{ 210, 235, 255, 255 });
     }
     else if (routeMode)
     {
@@ -1063,6 +1107,38 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
         }
         drawText(seq.c_str(), x + 16, y + 32, 13, Color{ 245, 235, 255, 255 });
     }
+}
+
+void UI::drawNewCityHint(const Simulation& sim)
+{
+    // One-line contextual guide for a fresh city. Vanishes permanently once
+    // the first developed building exists, so veteran players never see it.
+    if (sim.getUtilities().getTotalDevelopedBuildingCount() > 0)
+    {
+        return;
+    }
+
+    const char* hint = (sim.getRoadNetwork().getNodeCount() == 0)
+        ? "Welcome! Lay ROADS [1], then zone homes [2]  •  WASD pans, wheel zooms, Space pauses"
+        : "Roads placed! Zone RESIDENTIAL [2] so citizens move in  •  [F5] saves the city";
+
+    const int sw = GetScreenWidth();
+    const int sh = GetScreenHeight();
+    Vector2 sz = measureText(hint, 13, false);
+    const int w = static_cast<int>(sz.x) + 36;
+    if (w + 32 > sw)
+    {
+        return;  // Too narrow to help; stay out of the way.
+    }
+    const int h = 32;
+    const int x = (sw - w) / 2;
+    const int y = sh - 88 - h - 12;
+
+    DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                          0.3f, 4, Color{ 16, 26, 44, 245 });
+    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
+                               0.3f, 4, Color{ 0, 180, 240, 255 });
+    drawTextCentered(hint, x + w / 2, y + h / 2, 13, Color{ 220, 235, 255, 255 });
 }
 
 void UI::drawToast(const std::string& msg, float timer, bool hasBanner)
