@@ -28,7 +28,7 @@ The v0.1.0 release establishes the foundational living city sandbox:
 * **Macroeconomics & Ledger**: Citizen taxes, workplace taxes, tile and utility upkeep, live projected cashflow, and 24-hour daily settlements.
 * **Environmental Systems**: Industrial smog plume diffusion, park pollution filtration, land value desirability gradients, and composite citizen happiness scoring.
 * **Visual & UI Systems**: High-res TrueType fonts with bilinear filtering, top HUD ribbon, time controls ($1\times$–$8\times$), RCI demand meter, bottom tool dock with hover tooltips, Tile Inspector, and 5-tab City Dashboard (`TAB`).
-* **Overlays & Diagnostics**: Air Pollution (`F5`), Land Value (`F6`), Housing (`F7`), Utilities (`F8`), and in-engine Self-Test (`F9`).
+* **Overlays & Diagnostics**: Save (`F5`), Load (`F6`), Air Pollution (`F7`), Land Value (`F8`), Housing (`F9`), Utilities (`F10`), and in-engine Self-Test (`F11`).
 
 ---
 

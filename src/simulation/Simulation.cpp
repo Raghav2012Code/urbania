@@ -103,7 +103,17 @@ float Simulation::getElapsedSimulationSeconds() const
     return elapsedSimulationSeconds;
 }
 
+void Simulation::setElapsedSimulationSeconds(float seconds)
+{
+    elapsedSimulationSeconds = seconds < 0.0f ? 0.0f : seconds;
+}
+
 const Population& Simulation::getPopulation() const
+{
+    return population;
+}
+
+Population& Simulation::getPopulation()
 {
     return population;
 }
@@ -111,6 +121,39 @@ const Population& Simulation::getPopulation() const
 const urbania::Employment& Simulation::getEmployment() const
 {
     return employment;
+}
+
+urbania::Employment& Simulation::getEmployment()
+{
+    return employment;
+}
+
+void Simulation::rebuildAfterLoad()
+{
+    if (world == nullptr)
+    {
+        return;
+    }
+
+    // Drop transient trip state: vehicles respawn from commute routes.
+    traffic = urbania::Traffic();
+    congestion = urbania::Congestion();
+    citizenMovement = urbania::CitizenMovement();
+
+    // Deterministic derived rebuild (mirrors onWorldModified, plus buses).
+    roadNetwork.rebuild(*world);
+    population.update(*world, 0.0f);
+    employment.update(*world, population.getCitizenManager(), 0.0f);
+    commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
+    transit.syncWithWorld(*world);
+    transit.update(0.0f, roadNetwork);
+    utilities.recalculate(*world);
+    economy.recalculate(*world, population, employment);
+    demand.recalculate(*world, population, employment);
+    // NOTE: pollution grid is restored state, not rebuilt.
+    landValue.recalculate(*world, pollution, congestion);
+    housing.recalculate(*world, population, landValue);
+    happiness.recalculate(*world, population.getCitizenManager(), pollution, utilities);
 }
 
 const urbania::RoadNetwork& Simulation::getRoadNetwork() const

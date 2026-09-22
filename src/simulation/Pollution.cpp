@@ -193,4 +193,31 @@ const std::map<TileCoordinate, float>& Pollution::getPollutionGrid() const
     return grid;
 }
 
+float Pollution::getSecondsTowardNextHour() const
+{
+    return secondsTowardNextHour;
+}
+
+void Pollution::restoreSavedState(const std::map<TileCoordinate, float>& grid_, float secondsToward_,
+                                  float average_, float max_)
+{
+    grid.clear();
+    for (const auto& entry : grid_)
+    {
+        if (!entry.first.valid)
+        {
+            continue;
+        }
+        const float v = std::clamp(entry.second, MIN_POLLUTION, MAX_POLLUTION);
+        if (v > 0.001f)
+        {
+            grid[entry.first] = v;
+        }
+    }
+    secondsTowardNextHour = secondsToward_ < 0.0f ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+    averagePollution = average_ < 0.0f ? 0.0f : average_;
+    maxPollution = max_ < 0.0f ? 0.0f : max_;
+}
+
 }  // namespace urbania

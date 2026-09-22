@@ -25,6 +25,10 @@ public:
     const std::vector<Citizen>& getCitizens() const;
     std::vector<Citizen>& getCitizens();
     int getCitizenCount() const;
+    int getNextId() const;
+
+    // Replaces all citizens (used by SaveSystem load). No file I/O here.
+    void restoreSaved(std::vector<Citizen> citizens_, int nextId_);
 
 private:
     std::vector<Citizen> citizens;

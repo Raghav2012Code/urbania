@@ -37,6 +37,13 @@ const std::vector<Vehicle>& Traffic::getVehicles() const
     return vehicles;
 }
 
+void Traffic::clear()
+{
+    vehicles.clear();
+    citizenToVehicle.clear();
+    nextVehicleId = 1;
+}
+
 const std::vector<TileCoordinate>& Traffic::getRepresentativeRoute() const
 {
     for (const Vehicle& vehicle : vehicles)

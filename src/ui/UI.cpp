@@ -169,19 +169,19 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
                 }
             }
 
-            // Overlay Pills on top right
+            // Overlay Pills on top right (F5=Save, F6=Load; overlays live on F7-F10)
             int rightX = sw - 16;
-            rightX -= 68; // F9 Test
+            rightX -= 68; // F11 Test
             if (m.x >= rightX && m.x <= rightX + 68 && m.y >= 10 && m.y <= 40) showSelfTestModal = !showSelfTestModal;
             rightX -= (78 + 6); // TAB Dash
             if (m.x >= rightX && m.x <= rightX + 78 && m.y >= 10 && m.y <= 40) showDashboard = !showDashboard;
-            rightX -= (82 + 6); // F8 Utility
+            rightX -= (82 + 6); // F10 Utility
             if (m.x >= rightX && m.x <= rightX + 82 && m.y >= 10 && m.y <= 40) utilitiesOverlay = !utilitiesOverlay;
-            rightX -= (76 + 6); // F7 Housing
+            rightX -= (76 + 6); // F9 Housing
             if (m.x >= rightX && m.x <= rightX + 76 && m.y >= 10 && m.y <= 40) housingOverlay = !housingOverlay;
-            rightX -= (74 + 6); // F6 Land
+            rightX -= (74 + 6); // F8 Land
             if (m.x >= rightX && m.x <= rightX + 74 && m.y >= 10 && m.y <= 40) landValueOverlay = !landValueOverlay;
-            rightX -= (74 + 6); // F5 Smog
+            rightX -= (74 + 6); // F7 Smog
             if (m.x >= rightX && m.x <= rightX + 74 && m.y >= 10 && m.y <= 40) pollutionOverlay = !pollutionOverlay;
         }
     }
@@ -417,13 +417,13 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
     const int pillY = 10;
     const int pillH = 30;
 
-    // F9 Test
+    // F11 Test
     rx -= 68;
     const Color testBg = showSelfTestModal ? Color{ 230, 126, 34, 255 } : Color{ 26, 33, 50, 255 };
     const Color testText = showSelfTestModal ? WHITE : Color{ 150, 165, 190, 255 };
     DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, testBg);
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 68, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("F9 Test", rx + 34, pillY + 15, 12, testText, true);
+    drawTextCentered("F11 Test", rx + 34, pillY + 15, 12, testText, true);
 
     // TAB Dash
     rx -= (78 + 6);
@@ -433,37 +433,37 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 78, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
     drawTextCentered("TAB Dash", rx + 39, pillY + 15, 12, dashText, true);
 
-    // F8 Utility
+    // F10 Utility
     rx -= (82 + 6);
     const Color utilBg = utilitiesOverlay ? Color{ 0, 180, 240, 255 } : Color{ 26, 33, 50, 255 };
     const Color utilText = utilitiesOverlay ? Color{ 10, 20, 30, 255 } : Color{ 150, 165, 190, 255 };
     DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 82, static_cast<float>(pillH) }, 0.3f, 4, utilBg);
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 82, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("F8 Utility", rx + 41, pillY + 15, 12, utilText, true);
+    drawTextCentered("F10 Util", rx + 41, pillY + 15, 12, utilText, true);
 
-    // F7 Housing
+    // F9 Housing
     rx -= (76 + 6);
     const Color houseBg = housingOverlay ? Color{ 52, 152, 219, 255 } : Color{ 26, 33, 50, 255 };
     const Color houseText = housingOverlay ? WHITE : Color{ 150, 165, 190, 255 };
     DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 76, static_cast<float>(pillH) }, 0.3f, 4, houseBg);
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 76, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("F7 House", rx + 38, pillY + 15, 12, houseText, true);
+    drawTextCentered("F9 House", rx + 38, pillY + 15, 12, houseText, true);
 
-    // F6 Land Value
+    // F8 Land Value
     rx -= (74 + 6);
     const Color landBg = landValueOverlay ? Color{ 46, 204, 113, 255 } : Color{ 26, 33, 50, 255 };
     const Color landText = landValueOverlay ? Color{ 10, 25, 15, 255 } : Color{ 150, 165, 190, 255 };
     DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, landBg);
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("F6 Land", rx + 37, pillY + 15, 12, landText, true);
+    drawTextCentered("F8 Land", rx + 37, pillY + 15, 12, landText, true);
 
-    // F5 Smog
+    // F7 Smog
     rx -= (74 + 6);
     const Color smogBg = pollutionOverlay ? Color{ 210, 105, 30, 255 } : Color{ 26, 33, 50, 255 };
     const Color smogText = pollutionOverlay ? WHITE : Color{ 150, 165, 190, 255 };
     DrawRectangleRounded(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, smogBg);
     DrawRectangleRoundedLines(Rectangle{ static_cast<float>(rx), static_cast<float>(pillY), 74, static_cast<float>(pillH) }, 0.3f, 4, Color{ 45, 58, 85, 255 });
-    drawTextCentered("F5 Smog", rx + 37, pillY + 15, 12, smogText, true);
+    drawTextCentered("F7 Smog", rx + 37, pillY + 15, 12, smogText, true);
 }
 
 void UI::drawDemandMeters(const Simulation& sim)
@@ -962,7 +962,7 @@ void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool l
 
     if (utilitiesOverlay)
     {
-        drawText("UTILITIES (F8)", x + 12, y + 8, 12, Color{ 0, 200, 240, 255 }, true);
+        drawText("UTILITIES (F10)", x + 12, y + 8, 12, Color{ 0, 200, 240, 255 }, true);
         DrawRectangle(x + 12, y + 26, 12, 12, Color{ 0, 200, 240, 200 });
         drawText("Supplied", x + 28, y + 26, 11, Color{ 210, 235, 255, 255 });
         DrawRectangle(x + 82, y + 26, 12, 12, Color{ 231, 76, 60, 200 });

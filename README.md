@@ -70,10 +70,13 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | `D`           | Toggle demolition mode                              |
 | `Space`       | Pause / resume the simulation                       |
 | `F1`–`F4`     | Simulation speed: 1x, 2x, 4x, 8x                    |
-| `F5`          | Toggle pollution overlay                            |
-| `F6`          | Toggle land value overlay                           |
-| `F7`          | Toggle housing occupancy overlay                    |
-| `F9`          | Run the development self-test (builds test tiles)   |
+| `F5`          | Save city (`saves/urbania_save.dat`)                |
+| `F6`          | Load city                                           |
+| `F7`          | Toggle pollution overlay                            |
+| `F8`          | Toggle land value overlay                           |
+| `F9`          | Toggle housing occupancy overlay                    |
+| `F10`         | Toggle utilities overlay                            |
+| `F11`         | Run the development self-test (builds test tiles)   |
 
 ## Gameplay systems
 

@@ -65,6 +65,28 @@ const std::vector<Job>& Employment::getJobs() const
     return jobs;
 }
 
+int Employment::getNextJobId() const
+{
+    return nextJobId;
+}
+
+void Employment::restoreNextJobId(int nextId_)
+{
+    int maxId = 0;
+    for (const Job& job : jobs)
+    {
+        if (job.id > maxId)
+        {
+            maxId = job.id;
+        }
+    }
+    nextJobId = nextId_ > maxId ? nextId_ : (maxId + 1);
+    if (nextJobId < 1)
+    {
+        nextJobId = 1;
+    }
+}
+
 int Employment::jobsForTileType(TileType type)
 {
     switch (type)

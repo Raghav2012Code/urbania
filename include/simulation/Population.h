@@ -33,6 +33,8 @@ public:
     int getTotalPopulation() const;
     int getTotalHousingCapacity() const;
     int getResidentsAt(int x, int y) const;
+    float getGrowthProgress(int x, int y) const;
+    void setGrowthProgress(int x, int y, float progress);
     const urbania::CitizenManager& getCitizens() const;
     urbania::CitizenManager& getCitizenManager();
 

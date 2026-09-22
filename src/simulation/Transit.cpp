@@ -297,6 +297,11 @@ int Transit::getNextRouteId() const
     return nextRouteId;
 }
 
+int Transit::getNextBusId() const
+{
+    return nextBusId;
+}
+
 void Transit::update(float deltaTime, const RoadNetwork& roadNetwork)
 {
     syncBusesWithRoutes();
@@ -430,6 +435,43 @@ void Transit::clear()
     nextStopId = 1;
     nextRouteId = 1;
     nextBusId = 1;
+}
+
+void Transit::restoreSaved(const std::vector<BusStop>& stops, const std::vector<BusRoute>& routes_,
+                           int nextStopId_, int nextRouteId_, int nextBusId_)
+{
+    busStops = stops;
+    routes = routes_;
+    buses.clear();
+
+    int maxStop = 0;
+    for (const auto& s : busStops)
+    {
+        if (s.id > maxStop)
+        {
+            maxStop = s.id;
+        }
+    }
+    int maxRoute = 0;
+    for (const auto& r : routes)
+    {
+        if (r.id > maxRoute)
+        {
+            maxRoute = r.id;
+        }
+    }
+    nextStopId = nextStopId_ > maxStop ? nextStopId_ : (maxStop + 1);
+    nextRouteId = nextRouteId_ > maxRoute ? nextRouteId_ : (maxRoute + 1);
+    nextBusId = nextBusId_ < 1 ? 1 : nextBusId_;
+    if (nextStopId < 1)
+    {
+        nextStopId = 1;
+    }
+    if (nextRouteId < 1)
+    {
+        nextRouteId = 1;
+    }
+    syncBusesWithRoutes();
 }
 
 }  // namespace urbania

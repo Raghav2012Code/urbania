@@ -37,6 +37,10 @@ public:
     int getEmployedCitizens() const;
     int getUnemployedCitizens() const;
     const std::vector<Job>& getJobs() const;
+    int getNextJobId() const;
+
+    // Restores the monotonic job-ID counter (used by SaveSystem load).
+    void restoreNextJobId(int nextId_);
 
 private:
     static int jobsForTileType(TileType type);

@@ -183,6 +183,20 @@ float Economy::getTotalMaintenancePaid() const
     return totalMaintenancePaid;
 }
 
+float Economy::getSecondsTowardNextDay() const
+{
+    return secondsTowardNextDay;
+}
+
+void Economy::restoreSavedState(int money_, float totalTax_, float totalMaint_, float secondsToward_)
+{
+    money = money_ < 0 ? 0 : money_;
+    totalTaxCollected = totalTax_ < 0.0f ? 0.0f : totalTax_;
+    totalMaintenancePaid = totalMaint_ < 0.0f ? 0.0f : totalMaint_;
+    secondsTowardNextDay = secondsToward_ < 0.0f ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_DAY ? 0.0f : secondsToward_);
+}
+
 void Economy::recalculate(const World& world, const Population& population,
                           const urbania::Employment& employment)
 {

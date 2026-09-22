@@ -32,8 +32,16 @@ public:
     void shutdown();
 
     float getElapsedSimulationSeconds() const;
+    void setElapsedSimulationSeconds(float seconds);
     const Population& getPopulation() const;
+    Population& getPopulation();
     const urbania::Employment& getEmployment() const;
+    urbania::Employment& getEmployment();
+
+    // Clears transient movement state (vehicles/citizen progress) and
+    // rebuilds every derived cache from the current World. Called once by
+    // SaveSystem after primitives are restored. No file I/O here.
+    void rebuildAfterLoad();
     const urbania::RoadNetwork& getRoadNetwork() const;
     urbania::RoadNetwork& getRoadNetwork();
     const urbania::CommuteSystem& getCommuteSystem() const;

@@ -51,6 +51,7 @@ target_compile_options(urbania_sim PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(Urbania
     src/main.cpp
     src/core/Game.cpp
+    src/core/SaveSystem.cpp
     src/core/SelfTest.cpp
     src/core/Camera.cpp
     src/core/Input.cpp

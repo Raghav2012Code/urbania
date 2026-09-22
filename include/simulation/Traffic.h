@@ -32,6 +32,10 @@ public:
     const std::vector<Vehicle>& getVehicles() const;
     const std::vector<TileCoordinate>& getRepresentativeRoute() const;
 
+    // Drops all vehicles (transient trip state). Used after load; trips
+    // respawn deterministically from commute routes. No file I/O here.
+    void clear();
+
 private:
     void sweepInactive();
     void spawnFromCommuters(CitizenManager& citizens);

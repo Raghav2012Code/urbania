@@ -37,6 +37,9 @@ public:
     int getHour() const;
     int getMinute() const;
 
+    // Restores clock state (SaveSystem load). No file I/O here.
+    void restoreSavedState(float simulationTime_, float timeScale_, bool paused_);
+
 private:
     float simulationTime;
     float timeScale;

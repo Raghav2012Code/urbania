@@ -100,3 +100,11 @@ int SimulationClock::getMinute() const
 {
     return (static_cast<int>(simulationTime) / SECONDS_PER_MINUTE) % 60;
 }
+
+void SimulationClock::restoreSavedState(float simulationTime_, float timeScale_, bool paused_)
+{
+    simulationTime = simulationTime_ < 0.0f ? 0.0f : simulationTime_;
+    timeScale = isSupportedSpeed(timeScale_) ? timeScale_ : NORMAL_SPEED;
+    paused = paused_;
+    lastDeltaTime = 0.0f;
+}

@@ -92,4 +92,24 @@ int CitizenManager::getCitizenCount() const
     return static_cast<int>(citizens.size());
 }
 
+int CitizenManager::getNextId() const
+{
+    return nextId;
+}
+
+void CitizenManager::restoreSaved(std::vector<Citizen> citizens_, int nextId_)
+{
+    citizens = std::move(citizens_);
+    // nextId must stay above every live ID so future citizens never clash.
+    int maxId = 0;
+    for (const Citizen& c : citizens)
+    {
+        if (c.id > maxId)
+        {
+            maxId = c.id;
+        }
+    }
+    nextId = nextId_ > maxId ? nextId_ : (maxId + 1);
+}
+
 }  // namespace urbania

@@ -83,9 +83,16 @@ public:
     const Bus* getBus(int busId) const;
     int getBusCount() const;
     int getActiveBusCount() const;
+    int getNextBusId() const;
 
     void syncWithWorld(const World& world);
     void clear();
+
+    // Replaces stops/routes/ID counters with validated loaded data.
+    // Buses are intentionally NOT restored: syncBusesWithRoutes() respawns
+    // one bus per route on the next update(). No file I/O here.
+    void restoreSaved(const std::vector<BusStop>& stops, const std::vector<BusRoute>& routes,
+                      int nextStopId_, int nextRouteId_, int nextBusId_);
 
 private:
     void cleanupRoutes();

@@ -46,6 +46,12 @@ public:
     float getAveragePollution() const;
     float getMaxPollution() const;
     const std::map<TileCoordinate, float>& getPollutionGrid() const;
+    float getSecondsTowardNextHour() const;
+
+    // Restores the accumulated pollution grid + timers (SaveSystem load).
+    // Entries outside [MIN, MAX] are clamped. No file I/O here.
+    void restoreSavedState(const std::map<TileCoordinate, float>& grid_, float secondsToward_,
+                           float average_, float max_);
 
 private:
     std::map<TileCoordinate, float> grid;

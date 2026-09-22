@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 
+#include "core/SaveSystem.h"
 #include "raylib.h"
 #include "simulation/Pathfinder.h"
 #include "world/Tile.h"
@@ -158,17 +159,44 @@ void Game::handleSimulationInput()
     }
     else if (IsKeyPressed(KEY_F5))
     {
-        pollutionOverlay = !pollutionOverlay;
+        // F5 = Save city. Overlays moved to F7-F10 (see below) to free
+        // F5/F6 for save/load without breaking overlay functionality.
+        const auto result =
+            urbania::SaveSystem::save(world, simulation, simulationClock, camera);
+        transitMessage = result.ok ? "City saved"
+                                   : ("Save failed: " + result.message);
+        transitMessageTimer = 3.0f;
     }
     else if (IsKeyPressed(KEY_F6))
     {
-        landValueOverlay = !landValueOverlay;
+        // F6 = Load city (transactional: failed loads keep current city).
+        const auto result =
+            urbania::SaveSystem::load(world, simulation, simulationClock, camera);
+        if (result.ok)
+        {
+            currentRouteStops.clear();
+            pathTestDirty = true;
+            transitMessage = "City loaded";
+        }
+        else
+        {
+            transitMessage = "Load failed: " + result.message;
+        }
+        transitMessageTimer = 3.0f;
     }
     else if (IsKeyPressed(KEY_F7))
     {
-        housingOverlay = !housingOverlay;
+        pollutionOverlay = !pollutionOverlay;
     }
     else if (IsKeyPressed(KEY_F8))
+    {
+        landValueOverlay = !landValueOverlay;
+    }
+    else if (IsKeyPressed(KEY_F9))
+    {
+        housingOverlay = !housingOverlay;
+    }
+    else if (IsKeyPressed(KEY_F10))
     {
         utilitiesOverlay = !utilitiesOverlay;
     }
@@ -176,7 +204,7 @@ void Game::handleSimulationInput()
     {
         showDashboard = !showDashboard;
     }
-    else if (IsKeyPressed(KEY_F9))
+    else if (IsKeyPressed(KEY_F11))
     {
         showSelfTestModal = !showSelfTestModal;
         if (showSelfTestModal)

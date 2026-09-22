@@ -98,6 +98,25 @@ void Camera::end()
     EndMode2D();
 }
 
+Vector2 Camera::getTarget() const
+{
+    return camera.target;
+}
+
+float Camera::getZoom() const
+{
+    return camera.zoom;
+}
+
+void Camera::setTargetZoom(Vector2 target, float zoom)
+{
+    camera.target = target;
+    if (zoom >= MIN_ZOOM && zoom <= MAX_ZOOM)
+    {
+        camera.zoom = zoom;
+    }
+}
+
 Vector2 Camera::screenToWorld(Vector2 screenPosition) const
 {
     return GetScreenToWorld2D(screenPosition, camera);

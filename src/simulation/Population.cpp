@@ -64,6 +64,26 @@ int Population::getResidentsAt(int x, int y) const
     return countResidentsAt(x, y);
 }
 
+float Population::getGrowthProgress(int x, int y) const
+{
+    const auto it = homes.find({ x, y });
+    if (it == homes.end())
+    {
+        return 0.0f;
+    }
+    return it->second.growthProgress;
+}
+
+void Population::setGrowthProgress(int x, int y, float progress)
+{
+    const auto it = homes.find({ x, y });
+    if (it == homes.end())
+    {
+        return;
+    }
+    it->second.growthProgress = progress < 0.0f ? 0.0f : (progress > 1.0f ? 1.0f : progress);
+}
+
 const urbania::CitizenManager& Population::getCitizens() const
 {
     return citizens;

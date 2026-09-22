@@ -86,6 +86,11 @@ public:
     float getNetIncome() const;
     float getTotalTaxCollected() const;
     float getTotalMaintenancePaid() const;
+    float getSecondsTowardNextDay() const;
+
+    // Restores wallet + lifetime totals + day accumulator (SaveSystem load).
+    // Derived tax/maintenance/net are refreshed via recalculate(). No I/O here.
+    void restoreSavedState(int money_, float totalTax_, float totalMaint_, float secondsToward_);
 
 private:
     void settleDay(const World& world, const Population& population,
