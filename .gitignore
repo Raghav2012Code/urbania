@@ -1,6 +1,8 @@
 # Build directories
 build/
+build-release/
 cmake-build-*/
+dist/
 out/
 scratch/
 
@@ -25,6 +27,7 @@ _deps/
 *.dll
 *.dylib
 *.pdb
+*.zip
 
 # Clangd / IDE caches
 .cache/

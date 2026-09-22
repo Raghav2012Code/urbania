@@ -1,13 +1,22 @@
 # Urbania
 
-Urbania is a 2D top-down city simulation game, built in C++ with raylib.
-The long-term vision is a living city simulation covering citizens,
-buildings, roads, traffic, economy, pollution, and public transportation.
+Urbania is a 2D top-down city simulation game, built in C++17 with raylib.
 
-> **Project status:** playable simulation foundation. You can build a
-> road network, zone residential/commercial/industrial districts, watch
-> citizens move in and find jobs, and fast-forward the simulation clock.
-> Systems like traffic, pollution, happiness, and taxes do not exist yet.
+## Download & play (Windows x64)
+
+No developer tools needed:
+
+1. Download `Urbania-Windows-x64.zip` from
+   [GitHub Releases](https://github.com/Raghav2012Code/urbania/releases).
+2. Extract it anywhere.
+3. Run `Urbania.exe` and build your city.
+
+> **Project status:** playable, polished city simulation. Build roads,
+> zone residential/commercial/industrial districts and parks, watch
+> citizens move in, find jobs and commute by car or bus, manage
+> happiness, pollution, land value, utilities and the city budget —
+> with pause, 1x–8x speeds, overlays, day/night atmosphere, and
+> save/load (`saves/urbania_save.dat`, created next to the game).
 
 ## Technology stack
 
@@ -39,6 +48,13 @@ Build the executable:
 
 ```sh
 cmake --build build
+```
+
+For an optimized player build:
+
+```sh
+cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build build-release --parallel
 ```
 
 ## Running Urbania
