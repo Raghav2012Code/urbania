@@ -6,6 +6,9 @@ dist/
 out/
 scratch/
 
+# Runtime player saves (created next to the game)
+saves/
+
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/
