@@ -1,10 +1,16 @@
 #include "simulation/Economy.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
+#include "simulation/Utilities.h"
 #include "world/World.h"
+
+static_assert(Economy::UTILITY_MAINTENANCE ==
+                  urbania::Utilities::TOTAL_DAILY_MAINTENANCE,
+              "Economy utility upkeep must match Utilities maintenance");
 
 Economy::Economy()
     : money(STARTING_MONEY)
@@ -221,6 +227,7 @@ void Economy::recalculate(const World& world, const Population& population,
     const float net = tax - maintenance;
 
     taxIncome = tax;
+    utilityMaintenance = UTILITY_MAINTENANCE;
     maintenanceCost = maintenance;
     netIncome = net;
 }
@@ -233,7 +240,7 @@ void Economy::settleDay(const World& world, const Population& population,
     totalTaxCollected += taxIncome;
     totalMaintenancePaid += maintenanceCost;
 
-    const int netRounded = static_cast<int>(netIncome);
+    const int netRounded = static_cast<int>(std::lround(netIncome));
     if (money + netRounded < 0)
     {
         money = 0;

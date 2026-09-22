@@ -84,6 +84,15 @@ private:
     Font fontRegular = {};
     Font fontBold = {};
     bool fontsLoaded = false;
+    bool fontsInitAttempted = false;
+
+    // Total width of the right-side pill block (6 pills + 5 gaps). Must stay
+    // in sync with update()/drawTopRibbon() pill layout.
+    static constexpr int kRightPillBlockWidth = 68 + 78 + 82 + 76 + 74 + 74 + 5 * 6;
+    static int pillBlockLeft(int screenWidth)
+    {
+        return screenWidth - 16 - kRightPillBlockWidth;
+    }
 };
 
 }  // namespace urbania

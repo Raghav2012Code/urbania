@@ -12,12 +12,9 @@ endif()
 
 find_package(raylib REQUIRED)
 
-add_executable(Urbania
-    src/main.cpp
-    src/core/Game.cpp
-    src/core/SelfTest.cpp
-    src/core/Camera.cpp
-    src/core/Input.cpp
+# Shared simulation/world sources. Single source of truth so the game and
+# all unit tests always build the same logic (no duplicated file lists).
+set(URBANIA_SIM_SOURCES
     src/world/Tile.cpp
     src/world/World.cpp
     src/simulation/Economy.cpp
@@ -44,6 +41,19 @@ add_executable(Urbania
     src/simulation/BusStop.cpp
     src/simulation/BusRoute.cpp
     src/simulation/Transit.cpp
+)
+
+add_library(urbania_sim STATIC ${URBANIA_SIM_SOURCES})
+target_include_directories(urbania_sim PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(urbania_sim PUBLIC raylib)
+target_compile_options(urbania_sim PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(Urbania
+    src/main.cpp
+    src/core/Game.cpp
+    src/core/SelfTest.cpp
+    src/core/Camera.cpp
+    src/core/Input.cpp
     src/rendering/TextureManager.cpp
     src/rendering/TileRenderer.cpp
     src/rendering/EntityRenderer.cpp
@@ -51,75 +61,19 @@ add_executable(Urbania
 )
 
 target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
-
-target_link_libraries(Urbania PRIVATE raylib)
-
+target_link_libraries(Urbania PRIVATE urbania_sim raylib)
 target_compile_options(Urbania PRIVATE -Wall -Wextra -Wpedantic)
 
 add_executable(test_utilities
     tests/test_utilities.cpp
-    src/world/Tile.cpp
-    src/world/World.cpp
-    src/simulation/Utilities.cpp
-    src/simulation/Economy.cpp
-    src/simulation/Happiness.cpp
-    src/simulation/Population.cpp
-    src/simulation/Citizen.cpp
-    src/simulation/CitizenManager.cpp
-    src/simulation/Employment.cpp
-    src/simulation/RoadNetwork.cpp
-    src/simulation/Pathfinder.cpp
-    src/simulation/CommuteSystem.cpp
-    src/simulation/CitizenMovement.cpp
-    src/simulation/Vehicle.cpp
-    src/simulation/Traffic.cpp
-    src/simulation/Congestion.cpp
-    src/simulation/Demand.cpp
-    src/simulation/Pollution.cpp
-    src/simulation/LandValue.cpp
-    src/simulation/Housing.cpp
-    src/simulation/Bus.cpp
-    src/simulation/BusStop.cpp
-    src/simulation/BusRoute.cpp
-    src/simulation/Transit.cpp
-    src/simulation/SimulationClock.cpp
-    src/simulation/Simulation.cpp
 )
-
 target_include_directories(test_utilities PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_utilities PRIVATE raylib)
+target_link_libraries(test_utilities PRIVATE urbania_sim raylib)
 target_compile_options(test_utilities PRIVATE -Wall -Wextra -Wpedantic)
 
 add_executable(test_simulation_balance
     tests/test_simulation_balance.cpp
-    src/world/Tile.cpp
-    src/world/World.cpp
-    src/simulation/Utilities.cpp
-    src/simulation/Economy.cpp
-    src/simulation/Happiness.cpp
-    src/simulation/Population.cpp
-    src/simulation/Citizen.cpp
-    src/simulation/CitizenManager.cpp
-    src/simulation/Employment.cpp
-    src/simulation/RoadNetwork.cpp
-    src/simulation/Pathfinder.cpp
-    src/simulation/CommuteSystem.cpp
-    src/simulation/CitizenMovement.cpp
-    src/simulation/Vehicle.cpp
-    src/simulation/Traffic.cpp
-    src/simulation/Congestion.cpp
-    src/simulation/Demand.cpp
-    src/simulation/Pollution.cpp
-    src/simulation/LandValue.cpp
-    src/simulation/Housing.cpp
-    src/simulation/Bus.cpp
-    src/simulation/BusStop.cpp
-    src/simulation/BusRoute.cpp
-    src/simulation/Transit.cpp
-    src/simulation/SimulationClock.cpp
-    src/simulation/Simulation.cpp
 )
-
 target_include_directories(test_simulation_balance PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_simulation_balance PRIVATE raylib)
+target_link_libraries(test_simulation_balance PRIVATE urbania_sim raylib)
 target_compile_options(test_simulation_balance PRIVATE -Wall -Wextra -Wpedantic)

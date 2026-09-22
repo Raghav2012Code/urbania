@@ -34,10 +34,11 @@ UI::UI()
 
 void UI::initialize()
 {
-    if (fontsLoaded)
+    if (fontsLoaded || fontsInitAttempted)
     {
         return;
     }
+    fontsInitAttempted = true;
 
     // Build codepoints list: Basic ASCII (32..126), Latin-1 Supplement (128..255)
     // plus essential symbols like bullet (•), em-dash (—), multiply (×)
@@ -59,12 +60,18 @@ void UI::initialize()
     if (FileExists(regPath))
     {
         fontRegular = LoadFontEx(regPath, 36, codepoints.data(), static_cast<int>(codepoints.size()));
-        SetTextureFilter(fontRegular.texture, TEXTURE_FILTER_BILINEAR);
+        if (fontRegular.texture.id > 0)
+        {
+            SetTextureFilter(fontRegular.texture, TEXTURE_FILTER_BILINEAR);
+        }
     }
     if (FileExists(boldPath))
     {
         fontBold = LoadFontEx(boldPath, 36, codepoints.data(), static_cast<int>(codepoints.size()));
-        SetTextureFilter(fontBold.texture, TEXTURE_FILTER_BILINEAR);
+        if (fontBold.texture.id > 0)
+        {
+            SetTextureFilter(fontBold.texture, TEXTURE_FILTER_BILINEAR);
+        }
     }
 
     fontsLoaded = (fontRegular.texture.id > 0);
@@ -83,13 +90,15 @@ void UI::shutdown()
         fontBold = {};
     }
     fontsLoaded = false;
+    fontsInitAttempted = false;
 }
 
 void UI::drawText(const char* text, float x, float y, float fontSize, Color color, bool bold) const
 {
     if (!text || text[0] == '\0') return;
-    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : GetFontDefault());
-    if (f.texture.id > 0 && f.texture.id != GetFontDefault().texture.id)
+    const Font defaultFont = GetFontDefault();
+    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : defaultFont);
+    if (f.texture.id > 0 && f.texture.id != defaultFont.texture.id)
     {
         DrawTextEx(f, text, Vector2{ std::round(x), std::round(y) }, fontSize, 0.5f, color);
     }
@@ -108,8 +117,9 @@ void UI::drawTextCentered(const char* text, float centerX, float centerY, float 
 Vector2 UI::measureText(const char* text, float fontSize, bool bold) const
 {
     if (!text || text[0] == '\0') return Vector2{ 0.0f, 0.0f };
-    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : GetFontDefault());
-    if (f.texture.id > 0 && f.texture.id != GetFontDefault().texture.id)
+    const Font defaultFont = GetFontDefault();
+    const Font& f = (bold && fontBold.texture.id > 0) ? fontBold : ((fontRegular.texture.id > 0) ? fontRegular : defaultFont);
+    if (f.texture.id > 0 && f.texture.id != defaultFont.texture.id)
     {
         return MeasureTextEx(f, text, fontSize, 0.5f);
     }
@@ -258,7 +268,10 @@ void UI::draw(const World& world, const Simulation& sim,
               const std::string& toastMessage, float toastTimer,
               const SelfTest& selfTest)
 {
-    if (!fontsLoaded)
+    // Single lazy attempt: initialize() itself guards against repeats via
+    // fontsInitAttempted, so a missing assets/ folder costs one probe, not
+    // one per frame.
+    if (!fontsLoaded && !fontsInitAttempted)
     {
         initialize();
     }
@@ -338,37 +351,66 @@ void UI::drawTopRibbon(const Simulation& sim, const SimulationClock& clock,
         drawTextCentered(speedLabels[i], bx + 17, 25, 13, btnText, true);
     }
 
-    // Money & Daily Cash Flow (Center)
-    const int moneyX = 535;
-    DrawRectangleRounded(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
-    drawText(formatRupees(sim.getEconomy().getMoney()).c_str(), moneyX + 10, 16, 15, Color{ 46, 204, 113, 255 }, true);
-
-    const int netInc = static_cast<int>(sim.getEconomy().getNetIncome());
-    if (netInc >= 0)
-    {
-        drawText(TextFormat("+%s/d", formatRupees(netInc).c_str()), moneyX + 110, 17, 12, Color{ 46, 204, 113, 220 });
-    }
-    else
-    {
-        drawText(TextFormat("-%s/d", formatRupees(-netInc).c_str()), moneyX + 110, 17, 12, Color{ 231, 76, 60, 220 });
-    }
-
-    // Population & Happiness
-    const int popX = 725;
-    DrawRectangleRounded(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
-    drawText(TextFormat("Pop: %d", sim.getPopulation().getTotalPopulation()), popX + 10, 16, 14, WHITE, true);
+    // Money & Population (center). Full cards need 180 + 10 + 215 = 405px
+    // between the speed controls (end ~516) and the right pill block.
+    // On narrow windows (e.g. 1280x720 default) that does not fit, so fall
+    // back to compact cards whose details live in the dashboard instead.
+    const int speedEnd = 368 + 3 * 38 + 34;
+    const int pillLeft = UI::pillBlockLeft(sw);
+    const int fullCenterWidth = 180 + 10 + 215;
+    const bool compactCenter = (speedEnd + 8 + fullCenterWidth + 8 > pillLeft);
 
     const float happy = sim.getHappiness().getAverageHappiness();
     Color happyCol = Color{ 46, 204, 113, 255 }; // Green
     if (happy < 40.0f) happyCol = Color{ 231, 76, 60, 255 }; // Red
     else if (happy < 65.0f) happyCol = Color{ 241, 196, 15, 255 }; // Yellow
 
-    DrawRectangleRounded(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4,
-                         Color{ happyCol.r, happyCol.g, happyCol.b, 40 });
-    DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4, happyCol);
-    drawTextCentered(TextFormat("%.1f%% Happy", happy), popX + 152, 25, 12, happyCol, true);
+    if (!compactCenter)
+    {
+        // Money & Daily Cash Flow (Center)
+        const int moneyX = 535;
+        DrawRectangleRounded(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(moneyX), 9, 180, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+        drawText(formatRupees(sim.getEconomy().getMoney()).c_str(), moneyX + 10, 16, 15, Color{ 46, 204, 113, 255 }, true);
+
+        const int netInc = static_cast<int>(std::lround(sim.getEconomy().getNetIncome()));
+        if (netInc >= 0)
+        {
+            drawText(TextFormat("+%s/d", formatRupees(netInc).c_str()), moneyX + 110, 17, 12, Color{ 46, 204, 113, 220 });
+        }
+        else
+        {
+            drawText(TextFormat("-%s/d", formatRupees(-netInc).c_str()), moneyX + 110, 17, 12, Color{ 231, 76, 60, 220 });
+        }
+
+        // Population & Happiness
+        const int popX = 725;
+        DrawRectangleRounded(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX), 9, 215, 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+        drawText(TextFormat("Pop: %d", sim.getPopulation().getTotalPopulation()), popX + 10, 16, 14, WHITE, true);
+
+        DrawRectangleRounded(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4,
+                             Color{ happyCol.r, happyCol.g, happyCol.b, 40 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX + 98), 12, 108, 26 }, 0.3f, 4, happyCol);
+        drawTextCentered(TextFormat("%.1f%% Happy", happy), popX + 152, 25, 12, happyCol, true);
+    }
+    else
+    {
+        // Compact cards: balance + population only, guaranteed to fit the
+        // 258px slot between speed controls and pills at 1280px wide.
+        // Full cash-flow / happiness detail remains in the dashboard tabs.
+        const int moneyX = speedEnd + 8;
+        const int moneyW = 130;
+        DrawRectangleRounded(Rectangle{ static_cast<float>(moneyX), 9, static_cast<float>(moneyW), 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(moneyX), 9, static_cast<float>(moneyW), 32 }, 0.25f, 4, Color{ 45, 58, 85, 255 });
+        drawText(formatRupees(sim.getEconomy().getMoney()).c_str(), moneyX + 8, 17, 13, Color{ 46, 204, 113, 255 }, true);
+
+        const int popX = moneyX + moneyW + 8;
+        const int popW = 118;
+        DrawRectangleRounded(Rectangle{ static_cast<float>(popX), 9, static_cast<float>(popW), 32 }, 0.25f, 4, Color{ 22, 28, 44, 255 });
+        DrawRectangleRoundedLines(Rectangle{ static_cast<float>(popX), 9, static_cast<float>(popW), 32 }, 0.25f, 4, happyCol);
+        drawText(TextFormat("Pop %d", sim.getPopulation().getTotalPopulation()), popX + 8, 17, 13, WHITE, true);
+    }
 
     // Right-side Overlay & Feature Pills (dynamically laid out from right margin)
     int rx = sw - 16;

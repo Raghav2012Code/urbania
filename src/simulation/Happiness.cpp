@@ -78,8 +78,10 @@ float Happiness::calculateCitizenHappiness(const Citizen& citizen, const World& 
     const bool validHomeBounds = citizen.home.valid && citizen.home.x >= 0 &&
                                  citizen.home.y >= 0 && citizen.home.x < world.getWidth() &&
                                  citizen.home.y < world.getHeight();
-    if (validHomeBounds &&
-        world.getTile(citizen.home.x, citizen.home.y).type == TileType::Residential)
+    const bool hasValidHousing =
+        validHomeBounds &&
+        world.getTile(citizen.home.x, citizen.home.y).type == TileType::Residential;
+    if (hasValidHousing)
     {
         score += VALID_HOUSING_BONUS;
     }
@@ -121,8 +123,10 @@ float Happiness::calculateCitizenHappiness(const Citizen& citizen, const World& 
         }
     }
 
-    // 6. Utility services modifier (-20 if home lacks one or more basic utilities)
-    if (validHomeBounds)
+    // 6. Utility services modifier (-20 if a valid residential home lacks
+    // one or more basic utilities). Invalid/demolished homes already carry
+    // the housing penalty above and must not stack a second -20.
+    if (hasValidHousing)
     {
         if (!utilities.isTileSupplied(citizen.home.x, citizen.home.y))
         {

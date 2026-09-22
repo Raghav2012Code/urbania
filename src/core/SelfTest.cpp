@@ -398,7 +398,17 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
                               (utils.getElectricityCapacity() == 100) &&
                               (utils.getWaterCapacity() == 100) &&
                               (utils.getSewageCapacity() == 100);
-    check(utilsRatesOk, "T21 city utilities capacities, demands & maintenance");
+    // Behavioral invariants, not just constants: grid partition must hold,
+    // demands must be non-negative, and upkeep must match the ledger.
+    const bool utilsBehaviorOk =
+        (utils.getSuppliedBuildingCount() + utils.getUnsuppliedBuildingCount() ==
+         utils.getTotalDevelopedBuildingCount()) &&
+        (utils.getElectricityDemand() >= 0) && (utils.getWaterDemand() >= 0) &&
+        (utils.getSewageDemand() >= 0) &&
+        (utils.getDailyMaintenanceCost() == Utilities::TOTAL_DAILY_MAINTENANCE) &&
+        (economy.getUtilityMaintenanceCost() == Utilities::TOTAL_DAILY_MAINTENANCE);
+    check(utilsRatesOk && utilsBehaviorOk,
+          "T21 city utilities capacities, demands & maintenance");
 }
 
 bool SelfTest::hasRun() const

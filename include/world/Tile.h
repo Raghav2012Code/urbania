@@ -22,6 +22,19 @@ struct TileCoordinate {
     int y = -1;
     bool valid = false;
 
+    static TileCoordinate validCoord(int x_, int y_)
+    {
+        TileCoordinate c;
+        c.x = x_;
+        c.y = y_;
+        c.valid = true;
+        return c;
+    }
+
+    // NOTE: `valid` participates in ordering so grid maps keyed by
+    // valid coordinates never collide with invalid lookups. Always use
+    // validCoord(x, y) (or {x, y, true}) for grid keys and early-out on
+    // !coord.valid before lookups.
     bool operator<(const TileCoordinate& other) const
     {
         if (x != other.x)

@@ -70,7 +70,12 @@ bool Utilities::isConnectedToRoad(const World& world, const TileCoordinate& coor
 
 void Utilities::update(const World& world, float simulationDeltaTime)
 {
-    (void)simulationDeltaTime;
+    // Paused (zero/negative delta) => state cannot have changed via sim time;
+    // skip the full O(W*H*25) rescan. World edits use onWorldModified().
+    if (simulationDeltaTime <= 0.0f)
+    {
+        return;
+    }
     recalculate(world);
 }
 
@@ -118,26 +123,20 @@ void Utilities::recalculate(const World& world)
 
             if (status.connected)
             {
-                if (allocatedElec + e <= electricityCapacity)
+                // All-or-nothing: only consume capacity when the whole
+                // building fits, so one starved resource never wastes the
+                // other two on a building that stays unsupplied.
+                const bool fitsElec = (allocatedElec + e <= electricityCapacity);
+                const bool fitsWater = (allocatedWater + w <= waterCapacity);
+                const bool fitsSewage = (allocatedSewage + s <= sewageCapacity);
+                if (fitsElec && fitsWater && fitsSewage)
                 {
                     status.hasElectricity = true;
-                    allocatedElec += e;
-                }
-
-                if (allocatedWater + w <= waterCapacity)
-                {
                     status.hasWater = true;
-                    allocatedWater += w;
-                }
-
-                if (allocatedSewage + s <= sewageCapacity)
-                {
                     status.hasSewage = true;
+                    allocatedElec += e;
+                    allocatedWater += w;
                     allocatedSewage += s;
-                }
-
-                if (status.hasElectricity && status.hasWater && status.hasSewage)
-                {
                     status.isFullySupplied = true;
                     ++suppliedBuildings;
                 }
@@ -153,14 +152,14 @@ void Utilities::recalculate(const World& world)
                 ++unsuppliedBuildings;
             }
 
-            statusGrid[{ x, y, true }] = status;
+            statusGrid[TileCoordinate::validCoord(x, y)] = status;
         }
     }
 }
 
 TileUtilityStatus Utilities::getTileStatus(int x, int y) const
 {
-    auto it = statusGrid.find({ x, y, true });
+    auto it = statusGrid.find(TileCoordinate::validCoord(x, y));
     if (it != statusGrid.end())
     {
         return it->second;
@@ -179,12 +178,27 @@ TileUtilityStatus Utilities::getTileStatus(const TileCoordinate& coord) const
 
 bool Utilities::isTileSupplied(int x, int y) const
 {
-    auto it = statusGrid.find({ x, y, true });
+    auto it = statusGrid.find(TileCoordinate::validCoord(x, y));
     if (it != statusGrid.end())
     {
         return it->second.isFullySupplied;
     }
     return false;
+}
+
+void Utilities::setElectricityCapacity(int capacity)
+{
+    electricityCapacity = std::max(0, capacity);
+}
+
+void Utilities::setWaterCapacity(int capacity)
+{
+    waterCapacity = std::max(0, capacity);
+}
+
+void Utilities::setSewageCapacity(int capacity)
+{
+    sewageCapacity = std::max(0, capacity);
 }
 
 bool Utilities::isTileSupplied(const TileCoordinate& coord) const

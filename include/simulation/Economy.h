@@ -10,7 +10,13 @@ class Employment;
 }
 
 // City financial state: construction wallet plus a simple deterministic
-// daily economy (citizen/workplace taxes minus per-tile maintenance).
+// daily economy (citizen/workplace taxes minus per-tile maintenance plus a
+// flat municipal utility upkeep that applies even to an empty city).
+//
+// NOTE: UTILITY_MAINTENANCE must stay equal to
+// urbania::Utilities::TOTAL_DAILY_MAINTENANCE (enforced by static_assert in
+// Economy.cpp). getUtilityMaintenanceCost() reports that flat component;
+// getMaintenanceCost() reports the total including it.
 //
 // Construction spending is immediate and never drives money negative.
 // Taxes and maintenance settle once per simulation day from accumulated

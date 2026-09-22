@@ -21,7 +21,10 @@ struct TileUtilityStatus {
 //
 // Coverage rule:
 // - A developed tile (Residential, Commercial, Industrial) is connected to
-//   utilities if there is a Road tile within UTILITY_CONNECTION_RADIUS (2 tiles).
+//   utilities if there is a Road tile within Chebyshev distance
+//   UTILITY_CONNECTION_RADIUS (2 tiles), i.e. a 5x5 square centered on the
+//   building. Diagonal neighbours (dx=2, dy=2) count as connected.
+//   Proximity only: road network connectivity is not required.
 //
 // Demand per developed tile:
 // - Residential: Electricity 1, Water 1, Sewage 1
@@ -34,8 +37,11 @@ struct TileUtilityStatus {
 // - Water:       100
 // - Sewage:      100
 //
-// Deterministic allocation:
+// Deterministic all-or-nothing allocation:
 // - Buildings are processed in stable coordinate order (row-major).
+// - A building is fully supplied only if ALL of its electricity, water,
+//   and sewage demand fits the remaining capacity. Otherwise it consumes
+//   no capacity and counts as unsupplied (no fragmented partial supply).
 // - If demand exceeds capacity, remaining buildings become unsupplied.
 //
 // Maintenance:
@@ -54,7 +60,9 @@ public:
     static constexpr float ELECTRICITY_DAILY_MAINTENANCE = 500.0f;
     static constexpr float WATER_DAILY_MAINTENANCE = 300.0f;
     static constexpr float SEWAGE_DAILY_MAINTENANCE = 300.0f;
-    static constexpr float TOTAL_DAILY_MAINTENANCE = 1100.0f;
+    static constexpr float TOTAL_DAILY_MAINTENANCE = ELECTRICITY_DAILY_MAINTENANCE +
+                                                     WATER_DAILY_MAINTENANCE +
+                                                     SEWAGE_DAILY_MAINTENANCE;
 
     static constexpr int RESIDENTIAL_ELECTRICITY_DEMAND = 1;
     static constexpr int RESIDENTIAL_WATER_DEMAND = 1;
@@ -89,6 +97,13 @@ public:
     int getElectricityCapacity() const;
     int getWaterCapacity() const;
     int getSewageCapacity() const;
+
+    // Capacity upgrade path (e.g. future power plants / water towers).
+    // Capacities are clamped at zero. Callers must recalculate() (or rely on
+    // the next update()/onWorldModified()) for supply to reflect the change.
+    void setElectricityCapacity(int capacity);
+    void setWaterCapacity(int capacity);
+    void setSewageCapacity(int capacity);
 
     int getSuppliedBuildingCount() const;
     int getUnsuppliedBuildingCount() const;
