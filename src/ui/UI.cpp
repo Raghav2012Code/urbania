@@ -581,7 +581,7 @@ void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
         { "[R]", "Route", "Transit", "Connects placed bus stops into active commuter routes", Color{ 180, 50, 220, 255 },
           routeMode,
           true },
-        { "[D]", "Demolish", "Free", "Clears structures and roads back to open grass", Color{ 220, 50, 50, 255 },
+        { "[X]", "Demolish", "Free", "Clears structures and roads back to open grass", Color{ 220, 50, 50, 255 },
           demolishMode,
           true }
     };
@@ -1059,7 +1059,7 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
                                   0.25f, 4, Color{ 231, 76, 60, 255 });
 
         drawText("DEMOLISH MODE ACTIVE", x + 16, y + 8, 14, Color{ 255, 100, 100, 255 }, true);
-        drawText("Click developed tiles to clear (Free) • Press [D] or [Esc] to Exit", x + 16, y + 26, 12, Color{ 230, 210, 210, 255 });
+        drawText("Click developed tiles to clear (Free) • Press [X] or [Esc] to Exit", x + 16, y + 26, 12, Color{ 230, 210, 210, 255 });
     }
     else if (busStopMode)
     {

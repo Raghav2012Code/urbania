@@ -67,7 +67,7 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | `1`–`5`       | Select build type: Road, Residential, Commercial, Industrial, Park |
 | `B`           | Toggle bus stop placement mode (Shift+Click to remove) |
 | `R`           | Toggle bus route creation mode (Shift+R to delete latest route) |
-| `D`           | Toggle demolition mode                              |
+| `X`           | Toggle demolition mode (frees `WASD` camera pan)     |
 | `Space`       | Pause / resume the simulation                       |
 | `F1`–`F4`     | Simulation speed: 1x, 2x, 4x, 8x                    |
 | `F5`          | Save city (`saves/urbania_save.dat`)                |

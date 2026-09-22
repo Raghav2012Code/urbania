@@ -259,7 +259,7 @@ void Game::handleBuildInput()
         routeMode = false;
         currentRouteStops.clear();
     }
-    else if (IsKeyPressed(KEY_D))
+    else if (IsKeyPressed(KEY_X))
     {
         demolishMode = !demolishMode;
         if (demolishMode)
