@@ -34,6 +34,7 @@ private:
     void drawLandValueOverlay();
     void drawHousingOverlay();
     void drawUtilitiesOverlay();
+    void drawDayNight();
     void drawBusRoutes();
 
     World world;

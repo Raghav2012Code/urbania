@@ -5,6 +5,7 @@
 
 #include "core/SaveSystem.h"
 #include "raylib.h"
+#include "rendering/DayNight.h"
 #include "simulation/Pathfinder.h"
 #include "world/Tile.h"
 
@@ -111,6 +112,7 @@ void Game::draw()
     entityRenderer.renderCitizens(simulation.getPopulation().getCitizens(), world.getTileSize());
     entityRenderer.renderVehicles(simulation.getTraffic(), world.getTileSize());
     entityRenderer.renderBuses(simulation.getTransit(), world.getTileSize());
+    drawDayNight();
     camera.end();
 
     // 2. Screen Space UI & HUD
@@ -747,6 +749,73 @@ void Game::drawUtilitiesOverlay()
                              1.0f,
                              status.isFullySupplied ? Color{ 50, 230, 255, 200 }
                                                     : Color{ 255, 100, 80, 220 });
+    }
+}
+
+void Game::drawDayNight()
+{
+    // Rendering-only atmosphere driven by the existing SimulationClock.
+    // No simulation state is read or written here besides the time.
+    const float tHours = static_cast<float>(simulationClock.getHour()) +
+                         static_cast<float>(simulationClock.getMinute()) / 60.0f;
+    const urbania::DayNightState st = urbania::dayNightAt(tHours);
+    if (st.nightFactor <= 0.001f && st.warmFactor <= 0.001f)
+    {
+        return;  // Full daylight: zero cost, original appearance.
+    }
+
+    const int tileSize = world.getTileSize();
+    const int worldW = world.getWidth() * tileSize;
+    const int worldH = world.getHeight() * tileSize;
+
+    // Warm dawn/dusk wash underneath the night tint.
+    if (st.warmFactor > 0.001f)
+    {
+        const unsigned char a = static_cast<unsigned char>(st.warmFactor * 46.0f);
+        DrawRectangle(0, 0, worldW, worldH, Color{ 255, 150, 60, a });
+    }
+
+    if (st.nightFactor <= 0.001f)
+    {
+        return;
+    }
+
+    // Cool night tint. Peak alpha ~95/255 keeps every entity readable.
+    const unsigned char nightA = static_cast<unsigned char>(st.nightFactor * 95.0f);
+    DrawRectangle(0, 0, worldW, worldH, Color{ 12, 18, 50, nightA });
+
+    // Deterministic lit windows on developed buildings (hash of tile
+    // coordinates, so they never flicker or regenerate per frame).
+    const unsigned char lightA = static_cast<unsigned char>(st.nightFactor * 225.0f);
+    const Color resLight = { 255, 210, 120, lightA };
+    const Color comLight = { 255, 235, 170, lightA };
+    const Color indLight = { 255, 160, 80, lightA };
+    for (int y = 0; y < world.getHeight(); ++y)
+    {
+        for (int x = 0; x < world.getWidth(); ++x)
+        {
+            const TileType type = world.getTile(x, y).type;
+            if (type != TileType::Residential && type != TileType::Commercial &&
+                type != TileType::Industrial)
+            {
+                continue;
+            }
+            const unsigned int h =
+                static_cast<unsigned int>(x * 73856093 ^ y * 19349663);
+            const int px = x * tileSize;
+            const int py = y * tileSize;
+            const Color col =
+                (type == TileType::Commercial) ? comLight : (type == TileType::Industrial ? indLight : resLight);
+            DrawRectangle(px + 8 + static_cast<int>(h % 7), py + 16 + static_cast<int>((h >> 4) % 6),
+                          3, 3, col);
+            DrawRectangle(px + 20 - static_cast<int>((h >> 7) % 6), py + 17 + static_cast<int>((h >> 9) % 6),
+                          3, 3, col);
+            if (type == TileType::Commercial)
+            {
+                DrawRectangle(px + 13 + static_cast<int>((h >> 12) % 5), py + 9 + static_cast<int>((h >> 14) % 4),
+                              4, 2, col);
+            }
+        }
     }
 }
 
