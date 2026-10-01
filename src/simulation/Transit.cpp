@@ -208,11 +208,15 @@ bool Transit::validateRoute(const RoadNetwork& roadNetwork,
         }
     }
 
-    // Check road connectivity between consecutive pairs
-    for (size_t i = 0; i + 1 < stopIds.size(); ++i)
+    // Check road connectivity between every pair the bus will actually drive.
+    // A route is a circuit: Bus::buildNextLeg advances with
+    // (currentStopIndex + 1) % stopIds.size(), so the wrap-around pair
+    // (n-1, 0) is traversed too and must be validated here.
+    const size_t stopCount = stopIds.size();
+    for (size_t i = 0; i < stopCount; ++i)
     {
         const BusStop* a = getBusStopById(stopIds[i]);
-        const BusStop* b = getBusStopById(stopIds[i + 1]);
+        const BusStop* b = getBusStopById(stopIds[(i + 1) % stopCount]);
         if (a == nullptr || b == nullptr)
         {
             return false;

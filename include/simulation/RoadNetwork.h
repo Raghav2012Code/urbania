@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <utility>
 #include <vector>
@@ -17,6 +18,11 @@ namespace urbania {
 // The graph is rebuilt on demand via rebuild() (after road construction
 // or demolition), never every frame. Ordered containers keep iteration
 // deterministic. No raylib dependency here.
+//
+// revision() counts rebuilds. Node count alone cannot describe the graph:
+// demolishing one road and building another leaves the count unchanged
+// while connectivity differs completely. Consumers that cache derived
+// results (CommuteSystem) must key on this instead.
 class RoadNetwork {
 public:
     void rebuild(const World& world);
@@ -27,8 +33,13 @@ public:
     int getNodeCount() const;
     bool areConnected(int x1, int y1, int x2, int y2) const;
 
+    // Monotonic rebuild counter. Unsigned 64-bit so it cannot overflow
+    // into a value that would alias an earlier revision.
+    std::uint64_t revision() const;
+
 private:
     std::map<std::pair<int, int>, std::vector<TileCoordinate>> adjacency;
+    std::uint64_t graphRevision = 0;
 };
 
 }  // namespace urbania

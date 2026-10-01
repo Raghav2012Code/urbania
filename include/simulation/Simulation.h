@@ -45,6 +45,7 @@ public:
     const urbania::RoadNetwork& getRoadNetwork() const;
     urbania::RoadNetwork& getRoadNetwork();
     const urbania::CommuteSystem& getCommuteSystem() const;
+    urbania::CommuteSystem& getCommuteSystem();
     const urbania::CitizenMovement& getCitizenMovement() const;
     const urbania::Traffic& getTraffic() const;
     const urbania::Congestion& getCongestion() const;

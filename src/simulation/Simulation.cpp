@@ -10,6 +10,7 @@ bool Simulation::initialize(World& world)
     employment = urbania::Employment();
     roadNetwork = urbania::RoadNetwork();
     roadNetwork.rebuild(world);
+    // Freshly constructed, so no invalidate() is needed here.
     commuteSystem = urbania::CommuteSystem();
     citizenMovement = urbania::CitizenMovement();
     traffic = urbania::Traffic();
@@ -139,6 +140,11 @@ void Simulation::rebuildAfterLoad()
     traffic = urbania::Traffic();
     congestion = urbania::Congestion();
     citizenMovement = urbania::CitizenMovement();
+    // CommuteSystem caches routes keyed on the road graph revision, and
+    // that cache survives a load. Without this reset a newly loaded city
+    // whose counts happen to match keeps the previous city's routes,
+    // counters, and sampleRoute.
+    commuteSystem.invalidate();
 
     // Deterministic derived rebuild (mirrors onWorldModified, plus buses).
     roadNetwork.rebuild(*world);
@@ -167,6 +173,11 @@ urbania::RoadNetwork& Simulation::getRoadNetwork()
 }
 
 const urbania::CommuteSystem& Simulation::getCommuteSystem() const
+{
+    return commuteSystem;
+}
+
+urbania::CommuteSystem& Simulation::getCommuteSystem()
 {
     return commuteSystem;
 }

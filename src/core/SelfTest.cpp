@@ -1,5 +1,7 @@
 #include "core/SelfTest.h"
 
+#include <algorithm>
+
 #include "simulation/BusRoute.h"
 #include "simulation/CitizenManager.h"
 #include "simulation/Congestion.h"
@@ -103,9 +105,11 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
     simulation.update(SIM_HOUR);
     check(simulation.getPopulation().getResidentsAt(HOME_X, HOME_Y) == 1, "T4 growth 0->1");
 
-    // T11: congestion on the newcomer's start tile plus the slowdown
-    // formula. A zero-delta update spawns a fresh trip frozen at its
-    // start tile, so usage is exact regardless of the live city.
+    // T11: a routed citizen occupies exactly one tile of its own route
+    // (congestion is sampled per vehicle from path[pathIndex]), plus the
+    // slowdown formula. Vehicles shuttle rather than respawning at the
+    // route start, so the assertion is about the route as a whole, not
+    // one fixed tile.
     {
         const Citizen* rookie = nullptr;
         for (const Citizen& citizen : simulation.getPopulation().getCitizens().getCitizens())
@@ -124,11 +128,22 @@ void SelfTest::run(World& world, Economy& economy, Simulation& simulation)
         else
         {
             simulation.update(0.0f);
-            check(simulation.getCongestion().getVehicleCount(HOME_X, ROAD_Y) >= 1,
-                  "T11 start tile usage >= 1");
-            check(simulation.getCongestion().getCongestion(HOME_X, ROAD_Y) >= 0.2f,
-                  "T11 congestion >= 0.2");
-            check(simulation.getCongestion().getMaxCongestion() >= 0.2f, "T11 max >= 0.2");
+            const std::vector<TileCoordinate>& route = rookie->commutePath;
+            int routeUsage = 0;
+            float routeCongestion = 0.0f;
+            for (const TileCoordinate& step : route)
+            {
+                routeUsage += simulation.getCongestion().getVehicleCount(step.x, step.y);
+                routeCongestion = std::max(
+                    routeCongestion, simulation.getCongestion().getCongestion(step.x, step.y));
+            }
+            // Exactly the newcomer's own vehicle occupies the route: one
+            // in transit plus any unrelated traffic that happens to share
+            // these tiles.
+            check(routeUsage >= 1, "T11 vehicle occupies the route");
+            check(routeCongestion > 0.0f, "T11 congestion on the route > 0");
+            check(simulation.getCongestion().getMaxCongestion() >= routeCongestion,
+                  "T11 max congestion covers the route");
             check(urbania::Congestion::getCapacity() == 5, "T11 capacity 5");
             const bool formula =
                 urbania::Congestion::speedMultiplier(0.0f) == 1.0f &&

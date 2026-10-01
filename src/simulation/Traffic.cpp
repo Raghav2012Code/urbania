@@ -1,5 +1,7 @@
 #include "simulation/Traffic.h"
 
+#include <algorithm>
+
 #include "simulation/CitizenManager.h"
 #include "simulation/Congestion.h"
 #include "simulation/RoadNetwork.h"
@@ -96,6 +98,12 @@ void Traffic::spawnFromCommuters(CitizenManager& citizens)
         vehicle.id = nextVehicleId;
         vehicle.citizenId = citizen.id;
         vehicle.path = citizen.commutePath;
+        // Start where the citizen actually is. Defaulting to 0 would
+        // teleport the car back to the start of the route whenever the
+        // citizen is part-way through a trip that was re-planned.
+        vehicle.pathIndex =
+            std::clamp(citizen.pathIndex, 0, static_cast<int>(vehicle.path.size()) - 1);
+        vehicle.movementProgress = citizen.movementProgress;
         vehicle.speed = VEHICLE_SPEED_TILES_PER_SECOND;
         vehicle.active = true;
         ++nextVehicleId;
@@ -158,15 +166,46 @@ void Traffic::moveVehicles(const RoadNetwork& roadNetwork, CitizenManager& citiz
             Congestion::speedMultiplier(congestion.getCongestion(current.x, current.y));
 
         vehicle.movementProgress += simulationDeltaTime * vehicle.speed * multiplier;
-        while (vehicle.movementProgress >= 1.0f && vehicle.pathIndex < legs)
+
+        // Shuttle along the route: reaching either end reverses direction
+        // instead of retiring the vehicle. This is what keeps one Vehicle
+        // per commuter for the whole session rather than allocating a new
+        // one on every completed trip.
+        while (vehicle.movementProgress >= 1.0f)
         {
+            if (vehicle.direction > 0)
+            {
+                if (vehicle.pathIndex < legs)
+                {
+                    ++vehicle.pathIndex;
+                }
+                else
+                {
+                    vehicle.direction = -1;
+                }
+            }
+            else
+            {
+                if (vehicle.pathIndex > 0)
+                {
+                    --vehicle.pathIndex;
+                }
+                else
+                {
+                    vehicle.direction = 1;
+                }
+            }
+
+            if (vehicle.direction > 0 && vehicle.pathIndex >= legs)
+            {
+                vehicle.direction = -1;
+            }
+            if (vehicle.direction < 0 && vehicle.pathIndex <= 0)
+            {
+                vehicle.direction = 1;
+            }
+
             vehicle.movementProgress -= 1.0f;
-            ++vehicle.pathIndex;
-        }
-        if (vehicle.pathIndex >= legs)
-        {
-            vehicle.active = false;
-            vehicle.movementProgress = 0.0f;
         }
     }
 }

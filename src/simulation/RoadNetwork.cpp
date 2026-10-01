@@ -43,11 +43,18 @@ void RoadNetwork::rebuild(const World& world)
     }
 
     adjacency = fresh;
+    ++graphRevision;
 }
 
 void RoadNetwork::clear()
 {
     adjacency.clear();
+    ++graphRevision;
+}
+
+std::uint64_t RoadNetwork::revision() const
+{
+    return graphRevision;
 }
 
 bool RoadNetwork::isRoad(int x, int y) const

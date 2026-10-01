@@ -8,13 +8,26 @@
 
 namespace urbania {
 
+void CommuteSystem::invalidate()
+{
+    lastRoadRevision = static_cast<std::uint64_t>(-1);
+    lastCitizenCount = -1;
+    lastEmployedCount = -1;
+
+    routedCitizens = 0;
+    unroutedCitizens = 0;
+    sampleRoute.clear();
+}
+
 void CommuteSystem::update(const World& world, const RoadNetwork& roadNetwork,
                            CitizenManager& citizens)
 {
-    // Recalculate only when something relevant changed: road graph
-    // size, citizen roster, or employment count. Per-frame single-tile
-    // edits always pass through a changed count, so no change slips by.
-    const int roadNodes = roadNetwork.getNodeCount();
+    // Recalculate only when something relevant changed. The road graph is
+    // keyed on its rebuild revision, not its node count: demolishing one
+    // road and building another keeps the count identical while
+    // connectivity changes completely, and a count-based check would leave
+    // every stored path pointing at tiles that are no longer roads.
+    const std::uint64_t roadRevision = roadNetwork.revision();
     int employed = 0;
     for (const Citizen& citizen : citizens.getCitizens())
     {
@@ -24,7 +37,7 @@ void CommuteSystem::update(const World& world, const RoadNetwork& roadNetwork,
         }
     }
 
-    if (roadNodes == lastRoadNodeCount && citizens.getCitizenCount() == lastCitizenCount &&
+    if (roadRevision == lastRoadRevision && citizens.getCitizenCount() == lastCitizenCount &&
         employed == lastEmployedCount)
     {
         return;
@@ -32,18 +45,9 @@ void CommuteSystem::update(const World& world, const RoadNetwork& roadNetwork,
 
     recalculateAllRoutes(world, roadNetwork, citizens);
 
-    lastRoadNodeCount = roadNetwork.getNodeCount();
+    lastRoadRevision = roadRevision;
     lastCitizenCount = citizens.getCitizenCount();
-
-    int employedNow = 0;
-    for (const Citizen& citizen : citizens.getCitizens())
-    {
-        if (citizen.employed)
-        {
-            ++employedNow;
-        }
-    }
-    lastEmployedCount = employedNow;
+    lastEmployedCount = employed;
 }
 
 void CommuteSystem::recalculateAllRoutes(const World& world, const RoadNetwork& roadNetwork,
@@ -71,8 +75,24 @@ void CommuteSystem::recalculateAllRoutes(const World& world, const RoadNetwork& 
         }
 
         citizen.commutePath = Pathfinder::findPath(roadNetwork, from, to);
-        if (citizen.commutePath.empty())
+
+        // Defence in depth: never keep a path that is not entirely on the
+        // road network. Pathfinder only walks road tiles, but validating
+        // here means a stale path cannot survive even if the revision
+        // check above were ever bypassed.
+        bool fullyOnRoad = !citizen.commutePath.empty();
+        for (const TileCoordinate& step : citizen.commutePath)
         {
+            if (!step.valid || !roadNetwork.isRoad(step.x, step.y))
+            {
+                fullyOnRoad = false;
+                break;
+            }
+        }
+
+        if (!fullyOnRoad)
+        {
+            citizen.commutePath.clear();
             unroutedCitizens += 1;
         }
         else
