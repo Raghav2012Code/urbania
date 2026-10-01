@@ -91,42 +91,75 @@ bool Bus::buildNextLeg(const Transit& transit, const RoadNetwork& roadNetwork)
         currentStopIndex = 0;
     }
 
-    const int fromStopId = route->stopIds[currentStopIndex];
-    const int toStopIndex = (currentStopIndex + 1) % totalStops;
-    const int toStopId = route->stopIds[toStopIndex];
-
-    const BusStop* fromStop = transit.getBusStopById(fromStopId);
-    const BusStop* toStop = transit.getBusStopById(toStopId);
-
-    if (fromStop == nullptr || toStop == nullptr || !fromStop->tile.valid || !toStop->tile.valid)
-    {
-        return false;
-    }
-
-    if (!roadNetwork.isRoad(fromStop->tile.x, fromStop->tile.y) ||
-        !roadNetwork.isRoad(toStop->tile.x, toStop->tile.y))
-    {
-        return false;
-    }
-
-    // Determine our start tile: if we have a current valid position, start from there, else from fromStop
-    TileCoordinate startTile = fromStop->tile;
+    // Physical position, if we still have one. Otherwise start from the
+    // stop we believe we are at.
+    TileCoordinate startTile{};
+    bool havePosition = false;
     if (pathIndex >= 0 && pathIndex < static_cast<int>(path.size()))
     {
         startTile = path[pathIndex];
+        havePosition = true;
     }
 
-    std::vector<TileCoordinate> newPath = Pathfinder::findPath(roadNetwork, startTile, toStop->tile);
-    if (newPath.empty())
+    // Loop-closing routes repeat the first stop at the end, so the
+    // wrap-around leg is "same stop -> same stop" and has nowhere to
+    // drive. Every other leg must be a real path of at least 2 tiles:
+    // Pathfinder::findPath returns a 1-element path (not empty) when
+    // start == goal, so an empty check alone is not sufficient.
+    for (int attempt = 0; attempt < totalStops; ++attempt)
     {
-        return false;
+        const int fromStopId = route->stopIds[currentStopIndex];
+        const int toStopIndex = (currentStopIndex + 1) % totalStops;
+        const int toStopId = route->stopIds[toStopIndex];
+
+        const BusStop* fromStop = transit.getBusStopById(fromStopId);
+        const BusStop* toStop = transit.getBusStopById(toStopId);
+
+        if (fromStop == nullptr || toStop == nullptr || !fromStop->tile.valid ||
+            !toStop->tile.valid)
+        {
+            return false;
+        }
+
+        if (!roadNetwork.isRoad(fromStop->tile.x, fromStop->tile.y) ||
+            !roadNetwork.isRoad(toStop->tile.x, toStop->tile.y))
+        {
+            return false;
+        }
+
+        const TileCoordinate legStart = havePosition ? startTile : fromStop->tile;
+
+        if (legStart == toStop->tile)
+        {
+            // Degenerate leg: already standing on the destination.
+            // Advance to the next stop and try again, keeping the
+            // current physical position.
+            havePosition = true;
+            startTile = legStart;
+            currentStopIndex = toStopIndex;
+            continue;
+        }
+
+        std::vector<TileCoordinate> newPath =
+            Pathfinder::findPath(roadNetwork, legStart, toStop->tile);
+        if (newPath.size() < 2)
+        {
+            return false;
+        }
+
+        path = std::move(newPath);
+        pathIndex = 0;
+        movementProgress = 0.0f;
+        active = true;
+        return true;
     }
 
-    path = std::move(newPath);
+    // Every remaining stop was degenerate (a route whose stops all share
+    // one tile). Nothing to drive.
+    path.clear();
     pathIndex = 0;
     movementProgress = 0.0f;
-    active = true;
-    return true;
+    return false;
 }
 
 }  // namespace urbania

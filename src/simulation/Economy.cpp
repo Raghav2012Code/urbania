@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "simulation/Employment.h"
 #include "simulation/Population.h"
@@ -190,7 +191,9 @@ float Economy::getSecondsTowardNextDay() const
 
 void Economy::restoreSavedState(int money_, float totalTax_, float totalMaint_, float secondsToward_)
 {
-    money = money_ < 0 ? 0 : money_;
+    // Clamp both ends: a negative value is invalid, and an out-of-range
+    // positive one would overflow the next daily settlement.
+    money = std::clamp(money_, 0, std::numeric_limits<int>::max());
     totalTaxCollected = totalTax_ < 0.0f ? 0.0f : totalTax_;
     totalMaintenancePaid = totalMaint_ < 0.0f ? 0.0f : totalMaint_;
     secondsTowardNextDay = secondsToward_ < 0.0f ? 0.0f
@@ -254,13 +257,13 @@ void Economy::settleDay(const World& world, const Population& population,
     totalTaxCollected += taxIncome;
     totalMaintenancePaid += maintenanceCost;
 
-    const int netRounded = static_cast<int>(std::lround(netIncome));
-    if (money + netRounded < 0)
-    {
-        money = 0;
-    }
-    else
-    {
-        money = std::max(0, money + netRounded);
-    }
+    // Arithmetic in 64-bit: money is a 32-bit int and netIncome is a float,
+    // so money + netRounded can overflow before the bounds are applied. An
+    // overflowing sum wraps negative and would take the clamp-to-zero branch,
+    // silently wiping the treasury.
+    const long long netRounded = std::llround(static_cast<double>(netIncome));
+    const long long next = static_cast<long long>(money) + netRounded;
+    money = static_cast<int>(std::clamp<long long>(next, 0,
+                                                   static_cast<long long>(
+                                                       std::numeric_limits<int>::max())));
 }

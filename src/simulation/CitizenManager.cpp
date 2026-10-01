@@ -1,5 +1,8 @@
 #include "simulation/CitizenManager.h"
 
+#include <algorithm>
+#include <limits>
+
 namespace urbania {
 
 Citizen& CitizenManager::createCitizen(const TileCoordinate& home)
@@ -101,6 +104,8 @@ void CitizenManager::restoreSaved(std::vector<Citizen> citizens_, int nextId_)
 {
     citizens = std::move(citizens_);
     // nextId must stay above every live ID so future citizens never clash.
+    // nextId is monotonic across the whole session, so it can legitimately
+    // exceed MAX_CITIZENS; only the live count is bounded, not this counter.
     int maxId = 0;
     for (const Citizen& c : citizens)
     {
@@ -109,7 +114,9 @@ void CitizenManager::restoreSaved(std::vector<Citizen> citizens_, int nextId_)
             maxId = c.id;
         }
     }
-    nextId = nextId_ > maxId ? nextId_ : (maxId + 1);
+    // Guard maxId + 1 against overflow at the top of the int range.
+    const int floorId = (maxId < std::numeric_limits<int>::max()) ? (maxId + 1) : maxId;
+    nextId = std::max(nextId_, floorId);
 }
 
 }  // namespace urbania

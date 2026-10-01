@@ -484,8 +484,7 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
         }
         int citizenCount = 0;
         if (!parseInt(toks[0], citizenCount) || !parseInt(toks[1], data.nextCitizenId) ||
-            citizenCount < 0 || citizenCount > MAX_CITIZENS || data.nextCitizenId < 1 ||
-            data.nextCitizenId > MAX_CITIZENS + 1)
+            citizenCount < 0 || citizenCount > MAX_CITIZENS || data.nextCitizenId < 1)
         {
             result.message = "bad CITIZENS header";
             return result;
