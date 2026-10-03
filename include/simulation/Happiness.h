@@ -54,6 +54,11 @@ public:
 
     float getAverageHappiness() const;
 
+    // Hourly accumulator round-trip (SaveSystem). Clamped to
+    // [0, SIM_SECONDS_PER_HOUR) on restore.
+    float getSecondsTowardNextHour() const;
+    void restoreSavedState(float secondsToward_);
+
 private:
     float calculateCitizenHappiness(const Citizen& citizen, const World& world,
                                     const Pollution& pollution, const Utilities& utilities) const;

@@ -56,7 +56,8 @@ public:
 
     int getMoney() const;
 
-    // Generic wallet operations. spendMoney never drives money negative.
+    // Generic wallet operations. Both clamp money to the representable range
+    // [0, INT_MAX] and never drive it negative; addMoney honours the sign.
     bool canAfford(int amount) const;
     void addMoney(int amount);
     bool spendMoney(int amount);

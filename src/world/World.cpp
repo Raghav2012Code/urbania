@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 World::World()
     : tiles(WORLD_WIDTH * WORLD_HEIGHT)
@@ -52,4 +53,14 @@ const Tile& World::getTile(int x, int y) const
 bool World::isValid(int x, int y) const
 {
     return x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT;
+}
+
+std::vector<Tile> World::snapshotTiles() const
+{
+    return tiles;
+}
+
+void World::restoreTiles(std::vector<Tile> tiles_) noexcept
+{
+    tiles = std::move(tiles_);
 }

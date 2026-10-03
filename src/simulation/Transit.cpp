@@ -181,7 +181,7 @@ int Transit::getNextStopId() const
 bool Transit::validateRoute(const RoadNetwork& roadNetwork,
                             const std::vector<int>& stopIds) const
 {
-    if (stopIds.size() < MIN_ROUTE_STOPS)
+    if (stopIds.size() < MIN_ROUTE_STOPS || stopIds.size() > MAX_STOPS_PER_ROUTE)
     {
         return false;
     }
@@ -239,6 +239,11 @@ bool Transit::validateRoute(const RoadNetwork& roadNetwork,
 
 bool Transit::createRoute(const RoadNetwork& roadNetwork, const std::vector<int>& stopIds)
 {
+    if (routes.size() >= MAX_ROUTES)
+    {
+        return false;
+    }
+
     if (!validateRoute(roadNetwork, stopIds))
     {
         return false;

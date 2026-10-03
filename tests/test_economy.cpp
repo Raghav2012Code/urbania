@@ -60,10 +60,32 @@ void test_restore_clamps_money()
     CHECK(economy.getMoney() == std::numeric_limits<int>::max());
 }
 
+// Issue #14: addMoney silently discarded negative amounts and could overflow
+// a positive add. It now honours the sign and clamps to [0, INT_MAX].
+void test_add_money_sign_and_clamp()
+{
+    Economy economy;
+    const int start = economy.getMoney();  // STARTING_MONEY = 100,000
+
+    economy.addMoney(5000);
+    CHECK(economy.getMoney() == start + 5000);
+
+    economy.addMoney(-2000);
+    CHECK(economy.getMoney() == start + 3000);
+
+    economy.addMoney(-(start + 3000) - 1);
+    CHECK(economy.getMoney() == 0);
+
+    economy.restoreSavedState(std::numeric_limits<int>::max() - 10, 0.0f, 0.0f, 0.0f);
+    economy.addMoney(1000);
+    CHECK(economy.getMoney() == std::numeric_limits<int>::max());
+}
+
 int main()
 {
     std::cout << "=== Running Economy Regression Tests ===\n";
     test_settlement_near_int_max_does_not_wipe();
     test_restore_clamps_money();
+    test_add_money_sign_and_clamp();
     return testcheck::summary("Economy Regression Tests");
 }

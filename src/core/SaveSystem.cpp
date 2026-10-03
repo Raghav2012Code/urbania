@@ -9,8 +9,10 @@
 #include <limits>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <tuple>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "core/Camera.h"
@@ -36,8 +38,6 @@ constexpr int MAX_CITIZENS = 100000;
 constexpr int MAX_PATH_LEN = 20000;
 constexpr int MAX_POLLUTION_ENTRIES = 20000;
 constexpr int MAX_STOPS = 10000;
-constexpr int MAX_ROUTES = 2000;
-constexpr int MAX_STOPS_PER_ROUTE = 5000;
 
 char encodeTile(TileType type)
 {
@@ -124,6 +124,10 @@ struct SaveData {
     float totalMaint = 0.0f;
     float economySeconds = 0.0f;
     float simElapsed = 0.0f;
+    float hourLandValue = 0.0f;
+    float hourHousing = 0.0f;
+    float hourHappiness = 0.0f;
+    float hourDemand = 0.0f;
     int utilElec = 100;
     int utilWater = 100;
     int utilSewage = 100;
@@ -194,6 +198,26 @@ bool expectTokens(std::istringstream& ss, const std::string& tag, std::vector<st
 
 }  // namespace
 
+#ifdef URBANIA_ENABLE_LOAD_FAILPOINT
+namespace {
+
+bool g_loadFailpointArmed = false;
+
+bool consumeLoadFailpoint()
+{
+    const bool armed = g_loadFailpointArmed;
+    g_loadFailpointArmed = false;
+    return armed;
+}
+
+}  // namespace
+
+void SaveSystem::setLoadFailpointForTests(bool armed)
+{
+    g_loadFailpointArmed = armed;
+}
+#endif
+
 SaveSystem::Result SaveSystem::save(const World& world, const Simulation& simulation,
                                     const SimulationClock& clock, const Camera& camera,
                                     const std::string& path)
@@ -242,6 +266,10 @@ SaveSystem::Result SaveSystem::save(const World& world, const Simulation& simula
         out << "ECONOMY " << economy.getMoney() << " " << economy.getTotalTaxCollected() << " "
             << economy.getTotalMaintenancePaid() << " " << economy.getSecondsTowardNextDay() << "\n";
         out << "SIM " << simulation.getElapsedSimulationSeconds() << "\n";
+        out << "HOURCLOCKS " << simulation.getLandValue().getSecondsTowardNextHour() << " "
+            << simulation.getHousing().getSecondsTowardNextHour() << " "
+            << simulation.getHappiness().getSecondsTowardNextHour() << " "
+            << simulation.getDemand().getSecondsTowardNextHour() << "\n";
         out << "UTILCAPS " << utilities.getElectricityCapacity() << " "
             << utilities.getWaterCapacity() << " " << utilities.getSewageCapacity() << "\n";
 
@@ -372,7 +400,7 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
             return result;
         }
         int version = 0;
-        if (!parseInt(toks[0], version) || version != SAVE_VERSION)
+        if (!parseInt(toks[0], version) || version < 1 || version > SAVE_VERSION)
         {
             result.message = "unsupported version (got " + toks[0] + ")";
             return result;
@@ -427,7 +455,7 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
         int pausedInt = 0;
         if (!parseFloat(toks[0], data.clockTime) || !parseFloat(toks[1], data.clockScale) ||
             !parseInt(toks[2], pausedInt) || (pausedInt != 0 && pausedInt != 1) ||
-            data.clockTime < 0.0f)
+            data.clockTime < 0.0f || !SimulationClock::isSupportedSpeed(data.clockScale))
         {
             result.message = "bad CLOCK values";
             return result;
@@ -459,6 +487,31 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
         {
             result.message = "bad SIM value";
             return result;
+        }
+
+        // v2+ hourly accumulators. v1 files simply omit the record, leaving
+        // these at zero.
+        if (version >= 2)
+        {
+            if (!reader.next(line, err) ||
+                (ss.clear(), ss.str(line), !expectTokens(ss, "HOURCLOCKS", toks, 4, err)))
+            {
+                result.message = "missing HOURCLOCKS";
+                return result;
+            }
+            const float hourLimit = LandValue::SIM_SECONDS_PER_HOUR;
+            if (!parseFloat(toks[0], data.hourLandValue) ||
+                !parseFloat(toks[1], data.hourHousing) ||
+                !parseFloat(toks[2], data.hourHappiness) ||
+                !parseFloat(toks[3], data.hourDemand) || data.hourLandValue < 0.0f ||
+                data.hourLandValue >= hourLimit || data.hourHousing < 0.0f ||
+                data.hourHousing >= hourLimit || data.hourHappiness < 0.0f ||
+                data.hourHappiness >= hourLimit || data.hourDemand < 0.0f ||
+                data.hourDemand >= hourLimit)
+            {
+                result.message = "bad HOURCLOCKS values";
+                return result;
+            }
         }
 
         // Utility caps
@@ -707,7 +760,8 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
         }
         int routeCount = 0;
         if (!parseInt(toks[0], routeCount) || !parseInt(toks[1], data.nextRouteId) ||
-            !parseInt(toks[2], data.nextBusId) || routeCount < 0 || routeCount > MAX_ROUTES ||
+            !parseInt(toks[2], data.nextBusId) || routeCount < 0 ||
+            static_cast<size_t>(routeCount) > Transit::MAX_ROUTES ||
             data.nextRouteId < 1 || data.nextBusId < 1)
         {
             result.message = "bad ROUTES header";
@@ -731,7 +785,7 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
             }
             int rid, n;
             if (!(rs >> rid >> n) || rid <= 0 || !routeIds.insert(rid).second || n < 2 ||
-                n > MAX_STOPS_PER_ROUTE)
+                static_cast<size_t>(n) > Transit::MAX_STOPS_PER_ROUTE)
             {
                 result.message = "bad ROUTE header";
                 return result;
@@ -802,8 +856,21 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
     }
 
     // ---- Phase 2: apply to the live city (all data already validated). ----
+    // Strong exception guarantee: snapshot the mutable live state before the
+    // first mutation and restore it (via noexcept moves) if any step throws.
+    // This upholds the transactional contract in SaveSystem.h even for an
+    // allocation failure mid-apply.
+    Simulation simulationSnapshot;
+    std::vector<Tile> tileSnapshot;
+    urbania::Camera cameraSnapshot;
+    bool haveSnapshot = false;
     try
     {
+        simulationSnapshot = simulation;
+        tileSnapshot = world.snapshotTiles();
+        cameraSnapshot = camera;
+        haveSnapshot = true;
+
         const int w = data.width;
         const int h = data.height;
 
@@ -816,6 +883,13 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
                 world.getTile(x, y).type = type;
             }
         }
+
+#ifdef URBANIA_ENABLE_LOAD_FAILPOINT
+        if (consumeLoadFailpoint())
+        {
+            throw std::runtime_error("test load failpoint");
+        }
+#endif
 
         Population& population = simulation.getPopulation();
         population.update(world, 0.0f);
@@ -830,6 +904,10 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
         simulation.getEconomy().restoreSavedState(data.money, data.totalTax, data.totalMaint,
                                                   data.economySeconds);
         clock.restoreSavedState(data.clockTime, data.clockScale, data.clockPaused);
+        simulation.getLandValue().restoreSavedState(data.hourLandValue);
+        simulation.getHousing().restoreSavedState(data.hourHousing);
+        simulation.getHappiness().restoreSavedState(data.hourHappiness);
+        simulation.getDemand().restoreSavedState(data.hourDemand);
 
         simulation.getUtilities().setElectricityCapacity(data.utilElec);
         simulation.getUtilities().setWaterCapacity(data.utilWater);
@@ -855,6 +933,12 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
     }
     catch (const std::exception& e)
     {
+        if (haveSnapshot)
+        {
+            simulation = std::move(simulationSnapshot);
+            world.restoreTiles(std::move(tileSnapshot));
+            camera = cameraSnapshot;
+        }
         result.message = std::string("apply failed: ") + e.what();
         return result;
     }

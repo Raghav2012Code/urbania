@@ -126,4 +126,16 @@ int Housing::calculateHousingPressure(int population, int housingCapacity) const
                       MAX_HOUSING_PRESSURE);
 }
 
+float Housing::getSecondsTowardNextHour() const
+{
+    return secondsTowardNextHour;
+}
+
+void Housing::restoreSavedState(float secondsToward_)
+{
+    secondsTowardNextHour = secondsToward_ < 0.0f
+        ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+}
+
 }  // namespace urbania

@@ -91,3 +91,10 @@ urbania_add_test(test_save_load
     src/core/SaveSystem.cpp
     src/core/Camera.cpp
 )
+# Transactional-load test needs SaveSystem compiled with the failpoint seam.
+urbania_add_test(test_load_transactional
+    tests/test_load_transactional.cpp
+    src/core/SaveSystem.cpp
+    src/core/Camera.cpp
+)
+target_compile_definitions(test_load_transactional PRIVATE URBANIA_ENABLE_LOAD_FAILPOINT)

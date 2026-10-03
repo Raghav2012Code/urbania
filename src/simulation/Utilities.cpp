@@ -81,6 +81,9 @@ void Utilities::update(const World& world, float simulationDeltaTime)
 
 void Utilities::recalculate(const World& world)
 {
+    cachedWorld = &world;
+    gridDirty = false;
+
     electricityDemand = 0;
     waterDemand = 0;
     sewageDemand = 0;
@@ -159,6 +162,7 @@ void Utilities::recalculate(const World& world)
 
 TileUtilityStatus Utilities::getTileStatus(int x, int y) const
 {
+    refreshIfDirty();
     auto it = statusGrid.find(TileCoordinate::validCoord(x, y));
     if (it != statusGrid.end())
     {
@@ -178,6 +182,7 @@ TileUtilityStatus Utilities::getTileStatus(const TileCoordinate& coord) const
 
 bool Utilities::isTileSupplied(int x, int y) const
 {
+    refreshIfDirty();
     auto it = statusGrid.find(TileCoordinate::validCoord(x, y));
     if (it != statusGrid.end())
     {
@@ -189,16 +194,19 @@ bool Utilities::isTileSupplied(int x, int y) const
 void Utilities::setElectricityCapacity(int capacity)
 {
     electricityCapacity = std::max(0, capacity);
+    gridDirty = true;
 }
 
 void Utilities::setWaterCapacity(int capacity)
 {
     waterCapacity = std::max(0, capacity);
+    gridDirty = true;
 }
 
 void Utilities::setSewageCapacity(int capacity)
 {
     sewageCapacity = std::max(0, capacity);
+    gridDirty = true;
 }
 
 bool Utilities::isTileSupplied(const TileCoordinate& coord) const
@@ -242,16 +250,19 @@ int Utilities::getSewageCapacity() const
 
 int Utilities::getSuppliedBuildingCount() const
 {
+    refreshIfDirty();
     return suppliedBuildings;
 }
 
 int Utilities::getUnsuppliedBuildingCount() const
 {
+    refreshIfDirty();
     return unsuppliedBuildings;
 }
 
 int Utilities::getTotalDevelopedBuildingCount() const
 {
+    refreshIfDirty();
     return totalDevelopedBuildings;
 }
 
@@ -262,7 +273,19 @@ float Utilities::getDailyMaintenanceCost() const
 
 const std::map<TileCoordinate, TileUtilityStatus>& Utilities::getStatusGrid() const
 {
+    refreshIfDirty();
     return statusGrid;
+}
+
+void Utilities::refreshIfDirty() const
+{
+    if (gridDirty && cachedWorld != nullptr)
+    {
+        // Lazy refresh for a capacity change made while paused. recalculate()
+        // clears the flag and re-caches the world, so this runs at most once
+        // per change.
+        const_cast<Utilities*>(this)->recalculate(*cachedWorld);
+    }
 }
 
 }  // namespace urbania

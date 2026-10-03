@@ -161,4 +161,16 @@ float LandValue::getNearbyCongestion(int tileX, int tileY, const World& world,
     return maxCong;
 }
 
+float LandValue::getSecondsTowardNextHour() const
+{
+    return secondsTowardNextHour;
+}
+
+void LandValue::restoreSavedState(float secondsToward_)
+{
+    secondsTowardNextHour = secondsToward_ < 0.0f
+        ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+}
+
 }  // namespace urbania

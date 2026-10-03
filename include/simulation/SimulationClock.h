@@ -29,6 +29,10 @@ public:
     void setTimeScale(float scale);
     float getTimeScale() const;
 
+    // True for exactly the four supported time scales. Exposed so the save
+    // loader can reject an invalid clockScale instead of silently rewriting it.
+    static bool isSupportedSpeed(float scale);
+
     float getSimulationTime() const;
     float getSimulationDeltaTime() const;
     bool isPaused() const;

@@ -19,6 +19,11 @@ public:
     Tile& getTile(int x, int y);
     const Tile& getTile(int x, int y) const;
 
+    // Full-grid snapshot/restore used to make SaveSystem load transactional.
+    // Restore is a noexcept vector move so it cannot throw mid-recovery.
+    std::vector<Tile> snapshotTiles() const;
+    void restoreTiles(std::vector<Tile> tiles) noexcept;
+
 private:
     bool isValid(int x, int y) const;
 

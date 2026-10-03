@@ -180,3 +180,15 @@ int Demand::calculateIndustrialDemand(int population, int totalJobs, int occupie
     const float totalScore = occupancyScore + shortageScore;
     return std::clamp(static_cast<int>(std::round(totalScore)), MIN_DEMAND, MAX_DEMAND);
 }
+
+float Demand::getSecondsTowardNextHour() const
+{
+    return secondsTowardNextHour;
+}
+
+void Demand::restoreSavedState(float secondsToward_)
+{
+    secondsTowardNextHour = secondsToward_ < 0.0f
+        ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+}

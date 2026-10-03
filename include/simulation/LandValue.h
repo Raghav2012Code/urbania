@@ -53,6 +53,11 @@ public:
     float getAverageLandValue() const;
     const std::map<TileCoordinate, float>& getLandValueGrid() const;
 
+    // Hourly accumulator round-trip (SaveSystem). Clamped to
+    // [0, SIM_SECONDS_PER_HOUR) on restore.
+    float getSecondsTowardNextHour() const;
+    void restoreSavedState(float secondsToward_);
+
 private:
     float calculateTileLandValue(int x, int y, const World& world, const Pollution& pollution,
                                  const Congestion& congestion) const;

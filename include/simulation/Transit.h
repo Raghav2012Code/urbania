@@ -40,6 +40,12 @@ public:
     static constexpr int BUS_STOP_COST = 500;
     static constexpr size_t MIN_ROUTE_STOPS = 2;
 
+    // Creation-time limits. These are the single source of truth: the save
+    // loader must use these constants (not its own copies) so a city the game
+    // accepts can always be saved and loaded again.
+    static constexpr size_t MAX_ROUTES = 2000;
+    static constexpr size_t MAX_STOPS_PER_ROUTE = 5000;
+
     Transit();
 
     // Bus Stop management

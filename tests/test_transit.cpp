@@ -154,10 +154,50 @@ void test_validate_route_contract()
     }
 }
 
+// Issue #13: validateRoute must reject an over-long route at creation time so
+// the game cannot accept a city the loader would then refuse. Uses distinct,
+// mutually connected stops on a full road grid so only the length limit can be
+// the reason for rejection.
+void test_route_length_cap()
+{
+    World world;
+    for (int y = 0; y < world.getHeight(); ++y)
+    {
+        for (int x = 0; x < world.getWidth(); ++x)
+        {
+            world.getTile(x, y).type = TileType::Road;
+        }
+    }
+
+    RoadNetwork net;
+    net.rebuild(world);
+
+    Transit transit;
+    std::vector<int> stopIds;
+    stopIds.reserve(Transit::MAX_STOPS_PER_ROUTE + 1);
+    for (int y = 0; y < world.getHeight() && stopIds.size() <= Transit::MAX_STOPS_PER_ROUTE; ++y)
+    {
+        for (int x = 0; x < world.getWidth() && stopIds.size() <= Transit::MAX_STOPS_PER_ROUTE; ++x)
+        {
+            if (transit.addBusStopFree(world, x, y))
+            {
+                stopIds.push_back(transit.getBusStop(x, y)->id);
+            }
+        }
+    }
+
+    CHECK(Transit::MIN_ROUTE_STOPS == 2);
+    CHECK(Transit::MAX_ROUTES == 2000);
+    CHECK(Transit::MAX_STOPS_PER_ROUTE == 5000);
+    CHECK(stopIds.size() == Transit::MAX_STOPS_PER_ROUTE + 1);
+    CHECK(!transit.validateRoute(net, stopIds));
+}
+
 int main()
 {
     std::cout << "=== Running Transit Regression Tests ===\n";
     test_loop_route_bus_survives();
     test_validate_route_contract();
+    test_route_length_cap();
     return testcheck::summary("Transit Regression Tests");
 }

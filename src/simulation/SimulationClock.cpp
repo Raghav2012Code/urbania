@@ -6,14 +6,13 @@ constexpr int SECONDS_PER_MINUTE = 60;
 constexpr int SECONDS_PER_HOUR = 3600;
 constexpr int SECONDS_PER_DAY = 86400;
 
-bool isSupportedSpeed(float scale)
-{
-    return scale == SimulationClock::NORMAL_SPEED || scale == SimulationClock::FAST_SPEED ||
-           scale == SimulationClock::VERY_FAST_SPEED ||
-           scale == SimulationClock::EXTREMELY_FAST_SPEED;
-}
-
 }  // namespace
+
+bool SimulationClock::isSupportedSpeed(float scale)
+{
+    return scale == NORMAL_SPEED || scale == FAST_SPEED || scale == VERY_FAST_SPEED ||
+           scale == EXTREMELY_FAST_SPEED;
+}
 
 SimulationClock::SimulationClock()
     : simulationTime(static_cast<float>((START_HOUR * SECONDS_PER_HOUR) +

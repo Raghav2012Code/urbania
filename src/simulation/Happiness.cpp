@@ -158,4 +158,16 @@ bool Happiness::hasNearbyPark(int homeX, int homeY, const World& world) const
     return false;
 }
 
+float Happiness::getSecondsTowardNextHour() const
+{
+    return secondsTowardNextHour;
+}
+
+void Happiness::restoreSavedState(float secondsToward_)
+{
+    secondsTowardNextHour = secondsToward_ < 0.0f
+        ? 0.0f
+        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+}
+
 }  // namespace urbania

@@ -193,6 +193,42 @@ void test_economy_maintenance()
     CHECK(economy.getMoney() == startMoney - 1100);
 }
 
+// Issue #18: raising capacity while paused had no effect because update()
+// early-returns on a zero delta. The setters now mark the grid dirty and the
+// query accessors refresh lazily, so the change is visible immediately.
+void test_capacity_change_applies_while_paused()
+{
+    World world;
+    for (int x = 0; x < 50; ++x)
+    {
+        world.getTile(x, 0).type = TileType::Road;
+    }
+    for (int x = 0; x < 50; ++x)
+    {
+        world.getTile(x, 1).type = TileType::Commercial;
+    }
+    for (int x = 0; x < 10; ++x)
+    {
+        world.getTile(x, 2).type = TileType::Commercial;
+    }
+
+    Utilities utils;
+    utils.recalculate(world);
+    CHECK(utils.getSuppliedBuildingCount() == 50);
+    CHECK(utils.isTileSupplied(0, 2) == false);
+
+    utils.setElectricityCapacity(500);
+    utils.setWaterCapacity(500);
+    utils.setSewageCapacity(500);
+
+    // Paused frame: update() does no work, but queries must still reflect
+    // the new capacity.
+    utils.update(world, 0.0f);
+    CHECK(utils.getSuppliedBuildingCount() == 60);
+    CHECK(utils.isTileSupplied(0, 2) == true);
+    CHECK(utils.getUnsuppliedBuildingCount() == 0);
+}
+
 int main()
 {
     std::cout << "=== Running City Utilities Unit Tests ===\n";
@@ -201,5 +237,6 @@ int main()
     test_capacity_and_deterministic_allocation();
     test_happiness_impact();
     test_economy_maintenance();
+    test_capacity_change_applies_while_paused();
     return testcheck::summary("City Utilities Unit Tests");
 }

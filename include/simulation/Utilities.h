@@ -129,6 +129,14 @@ private:
     int totalDevelopedBuildings = 0;
 
     std::map<TileCoordinate, TileUtilityStatus> statusGrid;
+
+    // Lazy-refresh support: capacity setters mark the grid dirty so a const
+    // query still reflects the change while the simulation is paused (update()
+    // skips the O(W*H*25) rescan on a zero delta).
+    void refreshIfDirty() const;
+
+    mutable bool gridDirty = true;
+    mutable const World* cachedWorld = nullptr;
 };
 
 }  // namespace urbania

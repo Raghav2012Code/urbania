@@ -30,10 +30,13 @@ bool Economy::canAfford(int amount) const
 
 void Economy::addMoney(int amount)
 {
-    if (amount > 0)
-    {
-        money += amount;
-    }
+    // Honour the sign (a refund is a negative add) and clamp both ends the
+    // same way settleDay does: 64-bit arithmetic so a near-INT_MAX wallet
+    // cannot overflow, and no way to drive money negative.
+    const long long next = static_cast<long long>(money) + amount;
+    money = static_cast<int>(std::clamp<long long>(next, 0,
+                                                   static_cast<long long>(
+                                                       std::numeric_limits<int>::max())));
 }
 
 bool Economy::spendMoney(int amount)
