@@ -69,8 +69,8 @@ On Windows (MSYS2 UCRT64):
 ./build/Urbania.exe
 ```
 
-A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
-(or press `Esc`) to exit cleanly.
+A 1280×720 window titled `Urbania` opens at 60 FPS (resizable). Close the
+window (or press `Esc`) to exit cleanly.
 
 ## Controls
 
@@ -93,6 +93,7 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
 | `F9`          | Toggle housing occupancy overlay                    |
 | `F10`         | Toggle utilities overlay                            |
 | `F11`         | Run the development self-test (builds test tiles)   |
+| `TAB`         | Toggle the 5-tab city dashboard                     |
 
 ## Gameplay systems
 
@@ -100,8 +101,9 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
   `WORLD_HEIGHT`, `TILE_SIZE = 32`). Tile data never depends on raylib.
 - **Construction** — build on Grass for a fixed cost (Road Rs. 100,
   Residential Rs. 2,000, Commercial Rs. 5,000, Industrial Rs. 10,000,
-  Park Rs. 1,000) starting from Rs. 100,000. Demolition restores Grass
-  with no refund. There is no income yet.
+  Park Rs. 1,000) starting from Rs. 100,000. Bus stops cost Rs. 500.
+  Demolition restores Grass with no refund. Citizen and workplace taxes,
+  plus tile and utility maintenance, are settled every simulated day.
 - **Simulation clock** — city time starts at Day 1, 08:00 and advances
   independently of frame rate (1 real second = 1 sim minute at 1x).
   All simulation systems consume scaled simulation time, never raw
@@ -111,7 +113,8 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
   home removes its residents.
 - **Citizens** — individual entities with stable IDs, homes,
   unemployment, default income (Rs. 30,000) and neutral happiness (50).
-  Simulation data only: no movement or rendering yet.
+  Employed citizens commute along road routes, rendered as cars, and can
+  use the bus network.
 - **Employment** — Commercial tiles offer 8 jobs, Industrial tiles 15.
   Unemployed citizens are matched deterministically; demolishing a
   workplace unemploys its workers, who rematch when jobs appear.
@@ -119,9 +122,9 @@ A 1920×1080 window titled `Urbania` opens at 60 FPS. Close the window
   road construction/demolition, with deterministic A* pathfinding
   (Manhattan heuristic) used by an on-screen debug path test.
 
-The window also shows temporary debug info (selected tile, money, date,
-speed, population, jobs, road stats). This is development UI, not the
-final game UI.
+The window shows a top HUD ribbon (money, date and time, speed, population,
+and RCI demand), a bottom tool dock with hover tooltips, a tile inspector,
+and a 5-tab city dashboard opened with `TAB`.
 
 ## Project structure
 
@@ -151,10 +154,10 @@ Urbania/
 ```
 
 `main.cpp` only owns the application lifecycle. Per-frame behavior flows
-`Game::update()` → camera/input → simulation clock → simulation
-(Population → Employment) → construction, and `Game::draw()` renders the
-world through the camera. The `rendering` and `ui` directories are
-reserved for future systems.
+`Game::update()` → camera/input → simulation clock → simulation → construction,
+and `Game::draw()` renders the world through the camera. `rendering/` holds
+the tile and entity renderers plus procedural textures, and `ui/` holds the
+HUD, tool dock, tile inspector, and city dashboard.
 
 ## Roadmap
 
@@ -176,9 +179,12 @@ Done:
 - Housing and residential value (Housing capacity, occupancy ratio, pressure, and residential value)
 - Public transit foundation (Bus stops, placement rules, removal, road sync, and visual rendering)
 - Bus routes (Ordered bus-stop sequences, road connectivity validation, route creation and deletion)
+- Moving bus vehicles, city utilities with daily maintenance, and overlays
+- Save/load (`F5`/`F6`), procedural textures, and day/night atmosphere
 
 Not yet implemented:
 
-- Moving bus vehicles, transit passenger simulation, and bus line schedules
+- Transit passenger simulation and bus line schedules
+- Power plants and water towers to raise utility capacity
 - Trains, stations, and rail networks
-- Final UI, art textures, audio, and save/load persistence
+- Audio

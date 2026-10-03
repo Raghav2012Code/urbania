@@ -285,6 +285,58 @@ push → confirm the remote matches. No phase starts with a dirty tree.
   and numbered stop markers during draft route creation.
 - HUD displays `Route Mode`, `Stops: X`, `Current Route: 1 -> 2 -> ...`, and `Bus Routes: X`.
 
+## Phase 27 - Fail-capable test harness and CI foundation
+
+- `tests/test_check.h`: dependency-free `CHECK` / `CHECK_EQ` / `CHECK_NEAR`
+  macros that survive `-DNDEBUG`; both existing suites return a non-zero exit
+  code via `testcheck::summary()`. Previously every check was a bare `assert`
+  and `main()` always returned 0, so Release test binaries could never fail.
+- `CMakeLists.txt`: `enable_testing()` plus an `urbania_add_test()` helper;
+  CTest drives every suite.
+- `.github/workflows/ci.yml`: MSYS2 UCRT64 Debug build + `ctest` on push/PR.
+
+## Phase 28 - Regression tests for the audit fixes
+
+- New suites `test_transit`, `test_economy`, `test_traffic`, `test_commute`,
+  `test_save_load` covering the seven defects already fixed by `ecc0453` and
+  `da5bbe4` (#1, #2, #3, #6, #7, #8, #11), whose harnesses had lived in the
+  gitignored `scratch/`.
+- Each suite was confirmed to fail against the pre-fix revision and pass at HEAD.
+
+## Phase 29 - Correctness fixes
+
+- #15 `clockScale` validated on load through a now-public
+  `SimulationClock::isSupportedSpeed`.
+- #14 `Economy::addMoney` honours the sign and clamps to `[0, INT_MAX]`.
+- #13 route-count and route-length caps live on `Transit` and are enforced at
+  creation; the loader shares the same constants.
+- #12 the LandValue/Housing/Happiness/Demand hourly accumulators round-trip via
+  a v2 `HOURCLOCKS` record (v1 saves still load).
+- #18 utility capacity setters mark the grid dirty; const queries refresh lazily
+  so a change applies while paused.
+- #10 load apply is transactional: a snapshot of the live Simulation, World
+  tiles and Camera is restored via noexcept moves if any step throws; an
+  opt-in failpoint proves it.
+
+## Phase 30 - Performance
+
+- #4 `Population` rebuilds a flat per-tile resident count in one pass, removing
+  the O(homes * citizens) scan: 3000 homes went 281 ms -> 1.15 ms per update.
+- #5 `Employment`'s world-derived job rebuild and occupancy pass run only on
+  world edits; a dense-city frame went 123 ms -> 5.6 ms, inside the 16.67 ms
+  60 FPS budget (32,000-population variant: 2.96 ms).
+
+## Phase 31 - CI Release leg and negative probe
+
+- The workflow now builds and tests Debug and Release, and runs an opt-in
+  deliberately-failing probe to prove the harness can fail.
+
+## Phase 32 - Documentation refresh
+
+- README window size, controls (`TAB`), shipped economy/transit/rendering,
+  HUD description, project structure, and roadmap lists corrected.
+- `docs/ROADMAP.md` current state moved to v1.0.0.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build

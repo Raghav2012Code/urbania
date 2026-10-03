@@ -16,9 +16,9 @@ Urbania aims to combine the strategic depth, economic balance, and emergent comp
 
 ---
 
-## 📍 Current State: Baseline v0.1.0 (Alpha Release)
+## 📍 Current State: v1.0.0 (Playable Release)
 
-The v0.1.0 release establishes the foundational living city sandbox:
+The v1.0.0 release is a playable, polished living city sandbox:
 * **Grid World (80×80)**: Dynamic tile grid supporting Roads, Residential, Commercial, Industrial, and Parks with immediate construction costs and demolition.
 * **Demographics & Housing**: Hourly citizen migration, individual Citizen entities with home and workplace coordinates, housing occupancy caps (10 residents per tile).
 * **Workforce & Employment**: Commercial (8 jobs) and Industrial (15 jobs) slots, automated matching of unemployed citizens.
@@ -34,14 +34,18 @@ The v0.1.0 release establishes the foundational living city sandbox:
 
 ## 🚀 Future Milestones & States
 
+Save/load, facilities groundwork, and the systems listed below have grown
+beyond the original v0.1.0 plan; the milestones here are the remaining
+direction of travel from the shipped v1.0.0.
+
 ```
-v0.1.0 (Current) ───► v0.2.0 (Save/Load & Facilities) ───► v0.3.0 (Civic Services)
+v1.0.0 (Current) ───► v1.1.0 (Facilities & Capacity) ───► v1.2.0 (Civic Services)
                               │                                      │
                               ▼                                      ▼
-                      v0.4.0 (Audio & Immersion) ───► v0.5.0 (Advanced Transit)
+                      v1.3.0 (Audio & Immersion) ───► v1.4.0 (Advanced Transit)
                               │                                      │
                               ▼                                      ▼
-                      v0.6.0 (Skylines & Upgrades) ───► v1.0.0 (Scenarios & Full Launch)
+                      v1.5.0 (Skylines & Upgrades) ───► v2.0.0 (Scenarios & Full Launch)
 ```
 
 ---
@@ -167,13 +171,13 @@ v0.1.0 (Current) ───► v0.2.0 (Save/Load & Facilities) ───► v0.3.
 
 | Milestone | Target Scope | Focus Areas |
 | :--- | :--- | :--- |
-| **v0.1.0** | **Baseline MVP (Current)** | Core RCI loop, Bus Transit, Basic Utilities, Live Economy, Glass HUD, Overlays. |
-| **v0.2.0** | **Persistence & Power** | Save/Load system, Coal/Solar Power Plants, Water Pumping Stations, Sewage Plants. |
-| **v0.3.0** | **Civic Services** | Police, Fire Stations, Hospitals, Schools, Emergency dispatch vehicles. |
-| **v0.4.0** | **Audio & Atmosphere** | Spatial sound engine, Day/Night lighting cycle, Weather, Particle FX. |
-| **v0.5.0** | **Advanced Transit** | Subway/Metro networks, Multi-lane Avenues, Transit fare economics. |
-| **v0.6.0** | **Skylines & Density** | High-density skyscrapers, dynamic building upgrades, civic landmarks. |
-| **v1.0.0** | **Full Launch** | Pre-built Scenarios, Procedural Map Generator, Modding support. |
+| **v1.0.0** | **Playable Release (Current)** | Core RCI loop, Bus Transit, Utilities, Live Economy, Save/Load, Pollution/Happiness/Land Value/Housing, Overlays, Glass HUD. |
+| **v1.1.0** | **Facilities & Capacity** | Power Plants, Water Pumping Stations, Sewage Plants, capacity upgrades. |
+| **v1.2.0** | **Civic Services** | Police, Fire Stations, Hospitals, Schools, Emergency dispatch vehicles. |
+| **v1.3.0** | **Audio & Atmosphere** | Spatial sound engine, Weather, Particle FX. |
+| **v1.4.0** | **Advanced Transit** | Subway/Metro networks, Multi-lane Avenues, Transit fare economics. |
+| **v1.5.0** | **Skylines & Density** | High-density skyscrapers, dynamic building upgrades, civic landmarks. |
+| **v2.0.0** | **Full Launch** | Pre-built Scenarios, Procedural Map Generator, Modding support. |
 
 ---
 
