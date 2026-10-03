@@ -65,21 +65,29 @@ target_include_directories(Urbania PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(Urbania PRIVATE urbania_sim raylib)
 target_compile_options(Urbania PRIVATE -Wall -Wextra -Wpedantic)
 
-add_executable(test_utilities
-    tests/test_utilities.cpp
-)
-target_include_directories(test_utilities PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_utilities PRIVATE urbania_sim raylib)
-target_compile_options(test_utilities PRIVATE -Wall -Wextra -Wpedantic)
-
-add_executable(test_simulation_balance
-    tests/test_simulation_balance.cpp
-)
-target_include_directories(test_simulation_balance PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_simulation_balance PRIVATE urbania_sim raylib)
-target_compile_options(test_simulation_balance PRIVATE -Wall -Wextra -Wpedantic)
-
 # Register the suites with CTest so `ctest` (and CI) can run them.
 enable_testing()
-add_test(NAME utilities COMMAND test_utilities)
-add_test(NAME simulation_balance COMMAND test_simulation_balance)
+
+# One helper for every test binary: same include dirs, libraries, warnings,
+# and a matching CTest entry, so new suites cannot drift apart. Extra sources
+# may be appended for tests that need game-only translation units.
+function(urbania_add_test name)
+    add_executable(${name} ${ARGN})
+    target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_link_libraries(${name} PRIVATE urbania_sim raylib)
+    target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+urbania_add_test(test_utilities tests/test_utilities.cpp)
+urbania_add_test(test_simulation_balance tests/test_simulation_balance.cpp)
+urbania_add_test(test_transit tests/test_transit.cpp)
+urbania_add_test(test_economy tests/test_economy.cpp)
+urbania_add_test(test_traffic tests/test_traffic.cpp)
+urbania_add_test(test_commute tests/test_commute.cpp)
+# SaveSystem.cpp and Camera.cpp are part of the game target, not urbania_sim.
+urbania_add_test(test_save_load
+    tests/test_save_load.cpp
+    src/core/SaveSystem.cpp
+    src/core/Camera.cpp
+)
