@@ -337,6 +337,19 @@ push → confirm the remote matches. No phase starts with a dirty tree.
   HUD description, project structure, and roadmap lists corrected.
 - `docs/ROADMAP.md` current state moved to v1.0.0.
 
+## Phase 33 - v1.1.0 release
+
+- Bumped `project(Urbania VERSION 1.1.0)`: the release carries the save-format
+  v2 change, the simulation speedups, the test suite, and CI.
+- Rebuilt Release from scratch (warning-free under `-Wall -Wextra -Wpedantic`),
+  re-ran all nine CTest suites, and refreshed `dist/Urbania-Windows-x64/`
+  (`Urbania.exe`, `README.txt`) plus `dist/Urbania-Windows-x64.zip`. Those
+  artifacts are gitignored and ship via GitHub Releases, not the repository.
+- Smoke-tested the packaged binary: it launches, keeps running, and shuts down
+  cleanly.
+- Updated `docs/ROADMAP.md` current state, milestone diagram, and summary
+  timeline to v1.1.0.
+
 ## How each phase is verified
 
 Every feature lands only after: warning-free configure + build

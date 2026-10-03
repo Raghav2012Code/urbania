@@ -16,9 +16,10 @@ Urbania aims to combine the strategic depth, economic balance, and emergent comp
 
 ---
 
-## 📍 Current State: v1.0.0 (Playable Release)
+## 📍 Current State: v1.1.0 (Audit Remediation Release)
 
-The v1.0.0 release is a playable, polished living city sandbox:
+The v1.1.0 release is a playable, polished living city sandbox, plus a
+correctness and performance pass over the whole simulation:
 * **Grid World (80×80)**: Dynamic tile grid supporting Roads, Residential, Commercial, Industrial, and Parks with immediate construction costs and demolition.
 * **Demographics & Housing**: Hourly citizen migration, individual Citizen entities with home and workplace coordinates, housing occupancy caps (10 residents per tile).
 * **Workforce & Employment**: Commercial (8 jobs) and Industrial (15 jobs) slots, automated matching of unemployed citizens.
@@ -29,6 +30,7 @@ The v1.0.0 release is a playable, polished living city sandbox:
 * **Environmental Systems**: Industrial smog plume diffusion, park pollution filtration, land value desirability gradients, and composite citizen happiness scoring.
 * **Visual & UI Systems**: High-res TrueType fonts with bilinear filtering, top HUD ribbon, time controls ($1\times$–$8\times$), RCI demand meter, bottom tool dock with hover tooltips, Tile Inspector, and 5-tab City Dashboard (`TAB`).
 * **Overlays & Diagnostics**: Save (`F5`), Load (`F6`), Air Pollution (`F7`), Land Value (`F8`), Housing (`F9`), Utilities (`F10`), and in-engine Self-Test (`F11`).
+* **v1.1.0 Remediation**: an 18-issue audit closed — transactional save loading, save format v2, clock/route validation, linear population growth, world-gated employment rebuild (dense-city frame 123 ms → 2.5 ms, inside the 16.67 ms budget), nine CTest suites, and CI on Debug and Release.
 
 ---
 
@@ -36,16 +38,16 @@ The v1.0.0 release is a playable, polished living city sandbox:
 
 Save/load, facilities groundwork, and the systems listed below have grown
 beyond the original v0.1.0 plan; the milestones here are the remaining
-direction of travel from the shipped v1.0.0.
+direction of travel from the shipped v1.1.0.
 
 ```
-v1.0.0 (Current) ───► v1.1.0 (Facilities & Capacity) ───► v1.2.0 (Civic Services)
+v1.1.0 (Current) ───► v1.2.0 (Facilities & Capacity) ───► v1.3.0 (Civic Services)
                               │                                      │
                               ▼                                      ▼
-                      v1.3.0 (Audio & Immersion) ───► v1.4.0 (Advanced Transit)
+                      v1.4.0 (Audio & Immersion) ───► v1.5.0 (Advanced Transit)
                               │                                      │
                               ▼                                      ▼
-                      v1.5.0 (Skylines & Upgrades) ───► v2.0.0 (Scenarios & Full Launch)
+                      v1.6.0 (Skylines & Upgrades) ───► v2.0.0 (Scenarios & Full Launch)
 ```
 
 ---
@@ -171,12 +173,13 @@ v1.0.0 (Current) ───► v1.1.0 (Facilities & Capacity) ───► v1.2.0
 
 | Milestone | Target Scope | Focus Areas |
 | :--- | :--- | :--- |
-| **v1.0.0** | **Playable Release (Current)** | Core RCI loop, Bus Transit, Utilities, Live Economy, Save/Load, Pollution/Happiness/Land Value/Housing, Overlays, Glass HUD. |
-| **v1.1.0** | **Facilities & Capacity** | Power Plants, Water Pumping Stations, Sewage Plants, capacity upgrades. |
-| **v1.2.0** | **Civic Services** | Police, Fire Stations, Hospitals, Schools, Emergency dispatch vehicles. |
-| **v1.3.0** | **Audio & Atmosphere** | Spatial sound engine, Weather, Particle FX. |
-| **v1.4.0** | **Advanced Transit** | Subway/Metro networks, Multi-lane Avenues, Transit fare economics. |
-| **v1.5.0** | **Skylines & Density** | High-density skyscrapers, dynamic building upgrades, civic landmarks. |
+| **v1.0.0** | **Playable Release** | Core RCI loop, Bus Transit, Utilities, Live Economy, Save/Load, Pollution/Happiness/Land Value/Housing, Overlays, Glass HUD. |
+| **v1.1.0** | **Audit Remediation (Current)** | 18-issue correctness pass, transactional saves (format v2), 22x simulation speedup, nine CTest suites, CI on Debug and Release. |
+| **v1.2.0** | **Facilities & Capacity** | Power Plants, Water Pumping Stations, Sewage Plants, capacity upgrades. |
+| **v1.3.0** | **Civic Services** | Police, Fire Stations, Hospitals, Schools, Emergency dispatch vehicles. |
+| **v1.4.0** | **Audio & Atmosphere** | Spatial sound engine, Weather, Particle FX. |
+| **v1.5.0** | **Advanced Transit** | Subway/Metro networks, Multi-lane Avenues, Transit fare economics. |
+| **v1.6.0** | **Skylines & Density** | High-density skyscrapers, dynamic building upgrades, civic landmarks. |
 | **v2.0.0** | **Full Launch** | Pre-built Scenarios, Procedural Map Generator, Modding support. |
 
 ---
