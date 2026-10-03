@@ -110,3 +110,11 @@ add_executable(bench_simulation tests/bench_simulation.cpp)
 target_include_directories(bench_simulation PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(bench_simulation PRIVATE urbania_sim raylib)
 target_compile_options(bench_simulation PRIVATE -Wall -Wextra -Wpedantic)
+
+# Deliberately-failing harness probe, opt-in only. CI builds it and asserts the
+# binary exits non-zero, proving the test harness can fail.
+option(URBANIA_NEGATIVE_TESTS "Build the deliberate-failure harness probe" OFF)
+if(URBANIA_NEGATIVE_TESTS)
+    add_executable(test_harness_negative tests/test_harness_negative.cpp)
+    target_compile_options(test_harness_negative PRIVATE -Wall -Wextra -Wpedantic)
+endif()

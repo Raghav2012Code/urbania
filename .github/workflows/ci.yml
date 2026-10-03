@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug]
+        build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v4
 
@@ -37,3 +37,18 @@ jobs:
       - name: Test
         shell: msys2 {0}
         run: ctest --test-dir build --output-on-failure
+
+      # Prove the CHECK-based harness can actually fail (#9). A passing
+      # negative probe means the test infrastructure is vacuous again.
+      - name: Negative harness check
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B cmake-build-negative -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DURBANIA_NEGATIVE_TESTS=ON
+          cmake --build cmake-build-negative --target test_harness_negative
+          if ./cmake-build-negative/test_harness_negative.exe; then
+            echo "ERROR: negative harness unexpectedly passed"
+            exit 1
+          else
+            echo "Negative harness failed as expected"
+          fi
