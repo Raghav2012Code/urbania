@@ -99,6 +99,12 @@ urbania_add_test(test_load_transactional
 )
 target_compile_definitions(test_load_transactional PRIVATE URBANIA_ENABLE_LOAD_FAILPOINT)
 
+# Runs the in-engine F11 self-test headlessly.
+urbania_add_test(test_selftest
+    tests/test_selftest.cpp
+    src/core/SelfTest.cpp
+)
+
 # Manual performance benchmark for #5. Built but not registered with CTest:
 # timings are hardware dependent and must not gate CI.
 add_executable(bench_population tests/bench_population.cpp)
