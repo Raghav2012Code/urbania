@@ -78,3 +78,8 @@ add_executable(test_simulation_balance
 target_include_directories(test_simulation_balance PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(test_simulation_balance PRIVATE urbania_sim raylib)
 target_compile_options(test_simulation_balance PRIVATE -Wall -Wextra -Wpedantic)
+
+# Register the suites with CTest so `ctest` (and CI) can run them.
+enable_testing()
+add_test(NAME utilities COMMAND test_utilities)
+add_test(NAME simulation_balance COMMAND test_simulation_balance)

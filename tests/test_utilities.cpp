@@ -1,6 +1,7 @@
-#include <cassert>
 #include <iostream>
 #include <vector>
+
+#include "test_check.h"
 
 #include "world/World.h"
 #include "world/Tile.h"
@@ -20,24 +21,22 @@ void test_demand_rates()
     int elec = 0, water = 0, sewage = 0;
 
     Utilities::getDemandsForType(TileType::Residential, elec, water, sewage);
-    assert(elec == 1 && water == 1 && sewage == 1);
+    CHECK(elec == 1 && water == 1 && sewage == 1);
 
     Utilities::getDemandsForType(TileType::Commercial, elec, water, sewage);
-    assert(elec == 2 && water == 2 && sewage == 2);
+    CHECK(elec == 2 && water == 2 && sewage == 2);
 
     Utilities::getDemandsForType(TileType::Industrial, elec, water, sewage);
-    assert(elec == 4 && water == 3 && sewage == 3);
+    CHECK(elec == 4 && water == 3 && sewage == 3);
 
     Utilities::getDemandsForType(TileType::Road, elec, water, sewage);
-    assert(elec == 0 && water == 0 && sewage == 0);
+    CHECK(elec == 0 && water == 0 && sewage == 0);
 
     Utilities::getDemandsForType(TileType::Park, elec, water, sewage);
-    assert(elec == 0 && water == 0 && sewage == 0);
+    CHECK(elec == 0 && water == 0 && sewage == 0);
 
     Utilities::getDemandsForType(TileType::Grass, elec, water, sewage);
-    assert(elec == 0 && water == 0 && sewage == 0);
-
-    std::cout << "[PASS] test_demand_rates\n";
+    CHECK(elec == 0 && water == 0 && sewage == 0);
 }
 
 void test_connection_radius()
@@ -66,23 +65,21 @@ void test_connection_radius()
     Utilities utils;
     utils.recalculate(world);
 
-    assert(utils.isConnectedToRoad(world, 5, 3) == true);
-    assert(utils.isConnectedToRoad(world, 7, 5) == true);
-    assert(utils.isConnectedToRoad(world, 7, 7) == true);
+    CHECK(utils.isConnectedToRoad(world, 5, 3) == true);
+    CHECK(utils.isConnectedToRoad(world, 7, 5) == true);
+    CHECK(utils.isConnectedToRoad(world, 7, 7) == true);
 
-    assert(utils.isConnectedToRoad(world, 5, 2) == false);
-    assert(utils.isConnectedToRoad(world, 8, 5) == false);
-    assert(utils.isConnectedToRoad(world, 8, 8) == false);
+    CHECK(utils.isConnectedToRoad(world, 5, 2) == false);
+    CHECK(utils.isConnectedToRoad(world, 8, 5) == false);
+    CHECK(utils.isConnectedToRoad(world, 8, 8) == false);
 
-    assert(utils.isTileSupplied(5, 3) == true);
-    assert(utils.isTileSupplied(7, 5) == true);
-    assert(utils.isTileSupplied(7, 7) == true);
+    CHECK(utils.isTileSupplied(5, 3) == true);
+    CHECK(utils.isTileSupplied(7, 5) == true);
+    CHECK(utils.isTileSupplied(7, 7) == true);
 
-    assert(utils.isTileSupplied(5, 2) == false);
-    assert(utils.isTileSupplied(8, 5) == false);
-    assert(utils.isTileSupplied(8, 8) == false);
-
-    std::cout << "[PASS] test_connection_radius\n";
+    CHECK(utils.isTileSupplied(5, 2) == false);
+    CHECK(utils.isTileSupplied(8, 5) == false);
+    CHECK(utils.isTileSupplied(8, 8) == false);
 }
 
 void test_capacity_and_deterministic_allocation()
@@ -112,26 +109,24 @@ void test_capacity_and_deterministic_allocation()
     Utilities utils;
     utils.recalculate(world);
 
-    assert(utils.getTotalDevelopedBuildingCount() == 60);
-    assert(utils.getElectricityDemand() == 120);
-    assert(utils.getWaterDemand() == 120);
-    assert(utils.getSewageDemand() == 120);
+    CHECK(utils.getTotalDevelopedBuildingCount() == 60);
+    CHECK(utils.getElectricityDemand() == 120);
+    CHECK(utils.getWaterDemand() == 120);
+    CHECK(utils.getSewageDemand() == 120);
 
-    assert(utils.getSuppliedBuildingCount() == 50);
-    assert(utils.getUnsuppliedBuildingCount() == 10);
+    CHECK(utils.getSuppliedBuildingCount() == 50);
+    CHECK(utils.getUnsuppliedBuildingCount() == 10);
 
     // Row-major order check: row y=1 (x: 0..49) must be supplied
     for (int x = 0; x < 50; ++x)
     {
-        assert(utils.isTileSupplied(x, 1) == true);
+        CHECK(utils.isTileSupplied(x, 1) == true);
     }
     // row y=2 (x: 0..9) must be unsupplied because capacity was exhausted
     for (int x = 0; x < 10; ++x)
     {
-        assert(utils.isTileSupplied(x, 2) == false);
+        CHECK(utils.isTileSupplied(x, 2) == false);
     }
-
-    std::cout << "[PASS] test_capacity_and_deterministic_allocation\n";
 }
 
 void test_happiness_impact()
@@ -148,8 +143,8 @@ void test_happiness_impact()
     Utilities utils;
     utils.recalculate(world);
 
-    assert(utils.isTileSupplied(5, 5) == true);
-    assert(utils.isTileSupplied(15, 15) == false);
+    CHECK(utils.isTileSupplied(5, 5) == true);
+    CHECK(utils.isTileSupplied(15, 15) == false);
 
     CitizenManager citizenManager;
     Citizen& citizenSupplied = citizenManager.createCitizen({ 5, 5, true });
@@ -171,11 +166,9 @@ void test_happiness_impact()
     // Both are employed (+15), valid housing (+5), short commute (+0), same base (50), no pollution/parks.
     // happyA should have no utility penalty: 50 + 15 + 5 = 70.
     // happyB should have unpowered utility penalty (-20): 50 + 15 + 5 - 20 = 50.
-    assert(happyA == 70.0f);
-    assert(happyB == 50.0f);
-    assert(happyA - happyB == 20.0f);
-
-    std::cout << "[PASS] test_happiness_impact\n";
+    CHECK(happyA == 70.0f);
+    CHECK(happyB == 50.0f);
+    CHECK(happyA - happyB == 20.0f);
 }
 
 void test_economy_maintenance()
@@ -184,11 +177,11 @@ void test_economy_maintenance()
     Economy economy;
 
     // Fixed daily utility upkeep: ₹1,100 (₹500 elec + ₹300 water + ₹300 sewage)
-    assert(economy.getUtilityMaintenanceCost() == 1100.0f);
+    CHECK(economy.getUtilityMaintenanceCost() == 1100.0f);
 
     // Initial money: ₹100,000
     const int startMoney = economy.getMoney();
-    assert(startMoney == Economy::STARTING_MONEY);
+    CHECK(startMoney == Economy::STARTING_MONEY);
 
     Population population;
     Employment employment;
@@ -197,9 +190,7 @@ void test_economy_maintenance()
     economy.update(world, population, employment, 86400.0f);
 
     // Money should decrease by daily maintenance (₹1,100)
-    assert(economy.getMoney() == startMoney - 1100);
-
-    std::cout << "[PASS] test_economy_maintenance\n";
+    CHECK(economy.getMoney() == startMoney - 1100);
 }
 
 int main()
@@ -210,6 +201,5 @@ int main()
     test_capacity_and_deterministic_allocation();
     test_happiness_impact();
     test_economy_maintenance();
-    std::cout << "=== All Utilities Unit Tests Passed Successfully! ===\n";
-    return 0;
+    return testcheck::summary("City Utilities Unit Tests");
 }
