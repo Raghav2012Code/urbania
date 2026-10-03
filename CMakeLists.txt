@@ -98,3 +98,15 @@ urbania_add_test(test_load_transactional
     src/core/Camera.cpp
 )
 target_compile_definitions(test_load_transactional PRIVATE URBANIA_ENABLE_LOAD_FAILPOINT)
+
+# Manual performance benchmark for #5. Built but not registered with CTest:
+# timings are hardware dependent and must not gate CI.
+add_executable(bench_population tests/bench_population.cpp)
+target_include_directories(bench_population PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(bench_population PRIVATE urbania_sim raylib)
+target_compile_options(bench_population PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(bench_simulation tests/bench_simulation.cpp)
+target_include_directories(bench_simulation PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(bench_simulation PRIVATE urbania_sim raylib)
+target_compile_options(bench_simulation PRIVATE -Wall -Wextra -Wpedantic)

@@ -157,11 +157,78 @@ void test_profit_loss_and_ledger()
     CHECK(economy.getMoney() == moneyBefore + 1260);
 }
 
+// #4: the flat resident-count cache must stay consistent with the citizen
+// roster across growth and demolition.
+void test_resident_counts_consistent_with_population()
+{
+    World world;
+    const int homeCoords[6][2] = {
+        { 10, 10 }, { 11, 10 }, { 12, 10 }, { 20, 20 }, { 21, 20 }, { 30, 30 }
+    };
+    for (const auto& home : homeCoords)
+    {
+        world.getTile(home[0], home[1]).type = TileType::Residential;
+    }
+
+    Population population;
+    for (int hour = 0; hour < 25; ++hour)
+    {
+        population.update(world, 3600.0f);
+    }
+
+    int summed = 0;
+    for (const auto& home : homeCoords)
+    {
+        const int residents = population.getResidentsAt(home[0], home[1]);
+        CHECK(residents >= 0 && residents <= Population::RESIDENTS_PER_RESIDENTIAL_TILE);
+        summed += residents;
+    }
+    CHECK(summed == population.getTotalPopulation());
+    CHECK(population.getTotalPopulation() == 6 * Population::RESIDENTS_PER_RESIDENTIAL_TILE);
+    CHECK(population.getResidentsAt(0, 0) == 0);
+}
+
+// #5: gating the world-derived job rebuild on world edits must not change
+// employment behaviour across demolition and reconstruction.
+void test_employment_reconcile_on_world_change()
+{
+    World world;
+    world.getTile(0, 0).type = TileType::Commercial;
+    world.getTile(0, 1).type = TileType::Residential;
+
+    Simulation simulation;
+    simulation.initialize(world);
+    for (int i = 0; i < 10; ++i)
+    {
+        simulation.getPopulation().getCitizenManager().createCitizen({ 0, 1, true });
+    }
+    simulation.update(0.0f);
+
+    CHECK(simulation.getEmployment().getTotalJobs() == 8);
+    CHECK(simulation.getEmployment().getEmployedCitizens() == 8);
+    CHECK(simulation.getEmployment().getUnemployedCitizens() == 2);
+
+    // Demolish the only workplace: all jobs vanish, everyone is unemployed.
+    CHECK(simulation.getEconomy().tryDemolish(world.getTile(0, 0)));
+    simulation.onWorldModified();
+    CHECK(simulation.getEmployment().getTotalJobs() == 0);
+    CHECK(simulation.getEmployment().getEmployedCitizens() == 0);
+    CHECK(simulation.getEmployment().getUnemployedCitizens() == 10);
+
+    // Rebuild it as industrial (15 jobs): all ten rematch.
+    CHECK(simulation.getEconomy().tryBuild(world.getTile(0, 0), TileType::Industrial));
+    simulation.onWorldModified();
+    CHECK(simulation.getEmployment().getTotalJobs() == 15);
+    CHECK(simulation.getEmployment().getEmployedCitizens() == 10);
+}
+
 int main()
 {
     std::cout << "=== Running Simulation Balance Unit Tests ===\n";
     test_demand_system();
     test_population_growth_and_capacity();
     test_profit_loss_and_ledger();
+    test_resident_counts_consistent_with_population();
+    test_employment_reconcile_on_world_change();
     return testcheck::summary("Simulation Balance Unit Tests");
 }

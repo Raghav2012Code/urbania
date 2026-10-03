@@ -1,5 +1,7 @@
 #include "simulation/Population.h"
 
+#include <algorithm>
+
 #include "world/Tile.h"
 #include "world/World.h"
 
@@ -13,24 +15,53 @@ void Population::update(World& world, float simulationDeltaTime)
 {
     syncWithWorld(world);
 
+    gridWidth = world.getWidth();
+    gridHeight = world.getHeight();
+
+    // One pass over the citizens builds every tile's resident count, so the
+    // growth loop below is O(homes + citizens) instead of O(homes * citizens).
+    const std::size_t tileCount = static_cast<std::size_t>(gridWidth) *
+                                  static_cast<std::size_t>(gridHeight);
+    if (residentCounts.size() != tileCount)
+    {
+        residentCounts.assign(tileCount, 0);
+    }
+    else
+    {
+        std::fill(residentCounts.begin(), residentCounts.end(), 0);
+    }
+    for (const urbania::Citizen& citizen : citizens.getCitizens())
+    {
+        if (citizen.home.valid && citizen.home.x >= 0 && citizen.home.x < gridWidth &&
+            citizen.home.y >= 0 && citizen.home.y < gridHeight)
+        {
+            ++residentCounts[static_cast<std::size_t>(citizen.home.y) * gridWidth +
+                             citizen.home.x];
+        }
+    }
+
     if (simulationDeltaTime > 0.0f)
     {
         for (auto& entry : homes)
         {
             ResidentialData& home = entry.second;
+            const int homeX = entry.first.first;
+            const int homeY = entry.first.second;
+            const std::size_t index = static_cast<std::size_t>(homeY) * gridWidth + homeX;
+
             home.growthProgress +=
                 simulationDeltaTime / SIM_SECONDS_PER_HOUR * RESIDENTS_PER_SIM_HOUR;
 
             while (home.growthProgress >= 1.0f &&
-                   countResidentsAt(entry.first.first, entry.first.second) < home.capacity)
+                   residentCounts[index] < home.capacity)
             {
                 home.growthProgress -= 1.0f;
-                citizens.createCitizen(
-                    { entry.first.first, entry.first.second, true });
+                citizens.createCitizen({ homeX, homeY, true });
+                ++residentCounts[index];
             }
 
             // A full home holds no pending growth.
-            if (countResidentsAt(entry.first.first, entry.first.second) >= home.capacity)
+            if (residentCounts[index] >= home.capacity)
             {
                 home.growthProgress = 0.0f;
             }
@@ -61,7 +92,16 @@ int Population::getResidentsAt(int x, int y) const
     {
         return 0;
     }
-    return countResidentsAt(x, y);
+    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight)
+    {
+        return 0;
+    }
+    const std::size_t index = static_cast<std::size_t>(y) * gridWidth + x;
+    if (index >= residentCounts.size())
+    {
+        return 0;
+    }
+    return residentCounts[index];
 }
 
 float Population::getGrowthProgress(int x, int y) const
@@ -92,19 +132,6 @@ const urbania::CitizenManager& Population::getCitizens() const
 urbania::CitizenManager& Population::getCitizenManager()
 {
     return citizens;
-}
-
-int Population::countResidentsAt(int x, int y) const
-{
-    int count = 0;
-    for (const urbania::Citizen& citizen : citizens.getCitizens())
-    {
-        if (citizen.home.valid && citizen.home.x == x && citizen.home.y == y)
-        {
-            ++count;
-        }
-    }
-    return count;
 }
 
 void Population::syncWithWorld(const World& world)

@@ -83,6 +83,7 @@ void Simulation::onWorldModified()
 
     roadNetwork.rebuild(*world);
     population.update(*world, 0.0f);
+    employment.markWorldDirty();
     employment.update(*world, population.getCitizenManager(), 0.0f);
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     transit.syncWithWorld(*world);
@@ -149,6 +150,7 @@ void Simulation::rebuildAfterLoad()
     // Deterministic derived rebuild (mirrors onWorldModified, plus buses).
     roadNetwork.rebuild(*world);
     population.update(*world, 0.0f);
+    employment.markWorldDirty();
     employment.update(*world, population.getCitizenManager(), 0.0f);
     commuteSystem.update(*world, roadNetwork, population.getCitizenManager());
     transit.syncWithWorld(*world);

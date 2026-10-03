@@ -32,6 +32,10 @@ public:
 
     void update(World& world, CitizenManager& citizens, float simulationDeltaTime);
 
+    // Marks the world-derived job set as stale. Call after any world edit
+    // (construction/demolition); otherwise update() reuses the existing jobs.
+    void markWorldDirty();
+
     int getTotalJobs() const;
     int getOccupiedJobs() const;
     int getEmployedCitizens() const;
@@ -52,6 +56,7 @@ private:
     int nextJobId = 1;
     int employedCitizens = 0;
     int unemployedCitizens = 0;
+    bool worldDirty = true;
 };
 
 }  // namespace urbania

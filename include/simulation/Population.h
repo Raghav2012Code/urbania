@@ -2,6 +2,7 @@
 
 #include <map>
 #include <utility>
+#include <vector>
 
 #include "simulation/CitizenManager.h"
 
@@ -40,10 +41,17 @@ public:
 
 private:
     void syncWithWorld(const World& world);
-    int countResidentsAt(int x, int y) const;
 
     std::map<std::pair<int, int>, ResidentialData> homes;
     urbania::CitizenManager citizens;
+
+    // Flat per-tile resident counts, indexed y * gridWidth + x. Rebuilt in a
+    // single pass over the citizen list at the top of update(), so growth and
+    // getResidentsAt() are O(1) per home instead of O(citizens) each.
+    std::vector<int> residentCounts;
+    int gridWidth = 0;
+    int gridHeight = 0;
+
     int totalPopulation = 0;
     int totalHousingCapacity = 0;
 };

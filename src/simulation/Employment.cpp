@@ -17,8 +17,16 @@ void Employment::update(World& world, CitizenManager& citizens, float simulation
     // reconciles everything. Time scaling still governs the Population
     // growth that feeds new job seekers in.
 
-    syncJobsWithWorld(world);
-    reconcileOccupancy(citizens);
+    // The job set only changes when the world does (build/demolish), so the
+    // full-grid rescan, the two map builds, and the O(citizens * jobs)
+    // occupancy rebuild all run on world edits, not every frame. New
+    // unemployed citizens are still matched every frame.
+    if (worldDirty)
+    {
+        syncJobsWithWorld(world);
+        reconcileOccupancy(citizens);
+        worldDirty = false;
+    }
     matchUnemployed(citizens);
 
     employedCitizens = 0;
@@ -30,6 +38,11 @@ void Employment::update(World& world, CitizenManager& citizens, float simulation
         }
     }
     unemployedCitizens = citizens.getCitizenCount() - employedCitizens;
+}
+
+void Employment::markWorldDirty()
+{
+    worldDirty = true;
 }
 
 int Employment::getTotalJobs() const
