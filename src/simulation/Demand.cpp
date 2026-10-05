@@ -50,9 +50,9 @@ void Demand::update(const World& world, const Population& population,
     }
 
     secondsTowardNextHour += simulationDeltaTime;
-    while (secondsTowardNextHour >= SIM_SECONDS_PER_HOUR)
+    while (secondsTowardNextHour >= urbania::kSimSecondsPerHour)
     {
-        secondsTowardNextHour -= SIM_SECONDS_PER_HOUR;
+        secondsTowardNextHour -= urbania::kSimSecondsPerHour;
         recalculate(world, population, employment);
     }
 }
@@ -190,5 +190,5 @@ void Demand::restoreSavedState(float secondsToward_)
 {
     secondsTowardNextHour = secondsToward_ < 0.0f
         ? 0.0f
-        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+        : (secondsToward_ >= urbania::kSimSecondsPerHour ? 0.0f : secondsToward_);
 }

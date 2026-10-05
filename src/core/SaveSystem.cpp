@@ -499,7 +499,7 @@ SaveSystem::Result SaveSystem::load(World& world, Simulation& simulation, Simula
                 result.message = "missing HOURCLOCKS";
                 return result;
             }
-            const float hourLimit = LandValue::SIM_SECONDS_PER_HOUR;
+            const float hourLimit = urbania::kSimSecondsPerHour;
             if (!parseFloat(toks[0], data.hourLandValue) ||
                 !parseFloat(toks[1], data.hourHousing) ||
                 !parseFloat(toks[2], data.hourHappiness) ||

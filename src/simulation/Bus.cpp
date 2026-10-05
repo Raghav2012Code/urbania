@@ -34,7 +34,8 @@ void Bus::update(float deltaTime, const Transit& transit, const RoadNetwork& roa
     }
 
     // Verify all remaining tiles in path still exist on the road network
-    for (size_t i = static_cast<size_t>(std::max(0, pathIndex)); i < path.size(); ++i)
+    const size_t from = static_cast<size_t>(std::clamp(pathIndex, 0, static_cast<int>(path.size())));
+    for (size_t i = from; i < path.size(); ++i)
     {
         if (!roadNetwork.isRoad(path[i].x, path[i].y))
         {

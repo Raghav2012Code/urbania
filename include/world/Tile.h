@@ -15,6 +15,11 @@ struct Tile {
 
 namespace urbania {
 
+// Shared simulation-hour constant. One source of truth; all hourly
+// accumulators (Demand/Housing/Happiness/LandValue/Pollution/Population)
+// advance on this.
+inline constexpr float kSimSecondsPerHour = 3600.0f;
+
 // Tile position shared by input, simulation, and citizens.
 // An invalid coordinate (valid == false) means "no tile assigned".
 struct TileCoordinate {

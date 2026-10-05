@@ -37,8 +37,6 @@ public:
     static constexpr float CONGESTION_PENALTY_FACTOR = 10.0f;
     static constexpr float MAX_CONGESTION_PENALTY = 15.0f;
 
-    static constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
-
     LandValue();
 
     void update(const World& world, const Pollution& pollution, const Congestion& congestion,
@@ -54,7 +52,7 @@ public:
     const std::map<TileCoordinate, float>& getLandValueGrid() const;
 
     // Hourly accumulator round-trip (SaveSystem). Clamped to
-    // [0, SIM_SECONDS_PER_HOUR) on restore.
+    // [0, kSimSecondsPerHour) on restore.
     float getSecondsTowardNextHour() const;
     void restoreSavedState(float secondsToward_);
 

@@ -20,7 +20,13 @@ void TextureManager::initialize()
         return;
     }
 
-    loadOrGenerateTextures();
+    // Fallback magenta checker texture
+    Image fallbackImg = GenImageChecked(32, 32, 8, 8, MAGENTA, BLACK);
+    fallbackTexture = LoadTextureFromImage(fallbackImg);
+    SetTextureFilter(fallbackTexture, TEXTURE_FILTER_POINT);
+    UnloadImage(fallbackImg);
+
+    generateProceduralFallbacks();
     initialized = true;
 }
 
@@ -59,43 +65,18 @@ const Texture2D* TextureManager::getTexture(const std::string& name) const
     return (fallbackTexture.id > 0) ? &fallbackTexture : nullptr;
 }
 
-bool TextureManager::hasTexture(const std::string& name) const
-{
-    return textures.find(name) != textures.end();
-}
-
 void TextureManager::registerImage(const std::string& name, Image image)
 {
     Texture2D tex = LoadTextureFromImage(image);
     SetTextureFilter(tex, TEXTURE_FILTER_POINT);  // Crisp pixel-art scaling
     UnloadImage(image);
 
-    // If replace
     auto it = textures.find(name);
-    if (it != textures.end())
+    if (it != textures.end() && it->second.id > 0)
     {
-        if (it->second.id > 0)
-        {
-            UnloadTexture(it->second);
-        }
-        it->second = tex;
+        UnloadTexture(it->second);
     }
-    else
-    {
-        textures[name] = tex;
-    }
-}
-
-void TextureManager::loadOrGenerateTextures()
-{
-    // 1. Fallback magenta checker texture
-    Image fallbackImg = GenImageChecked(32, 32, 8, 8, MAGENTA, BLACK);
-    fallbackTexture = LoadTextureFromImage(fallbackImg);
-    SetTextureFilter(fallbackTexture, TEXTURE_FILTER_POINT);
-    UnloadImage(fallbackImg);
-
-    // 2. Generate procedural textures (or load if file exists in assets/textures/)
-    generateProceduralFallbacks();
+    textures[name] = tex;
 }
 
 void TextureManager::generateProceduralFallbacks()

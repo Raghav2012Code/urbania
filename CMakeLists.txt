@@ -15,20 +15,17 @@ find_package(raylib REQUIRED)
 # Shared simulation/world sources. Single source of truth so the game and
 # all unit tests always build the same logic (no duplicated file lists).
 set(URBANIA_SIM_SOURCES
-    src/world/Tile.cpp
     src/world/World.cpp
     src/simulation/Economy.cpp
     src/simulation/SimulationClock.cpp
     src/simulation/Simulation.cpp
     src/simulation/Population.cpp
-    src/simulation/Citizen.cpp
     src/simulation/CitizenManager.cpp
     src/simulation/Employment.cpp
     src/simulation/RoadNetwork.cpp
     src/simulation/Pathfinder.cpp
     src/simulation/CommuteSystem.cpp
     src/simulation/CitizenMovement.cpp
-    src/simulation/Vehicle.cpp
     src/simulation/Traffic.cpp
     src/simulation/Congestion.cpp
     src/simulation/Demand.cpp
@@ -38,8 +35,6 @@ set(URBANIA_SIM_SOURCES
     src/simulation/Housing.cpp
     src/simulation/Utilities.cpp
     src/simulation/Bus.cpp
-    src/simulation/BusStop.cpp
-    src/simulation/BusRoute.cpp
     src/simulation/Transit.cpp
 )
 

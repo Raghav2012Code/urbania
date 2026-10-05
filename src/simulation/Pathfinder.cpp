@@ -1,6 +1,8 @@
 #include "simulation/Pathfinder.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <queue>
 #include <utility>
@@ -13,9 +15,7 @@ using Coord = std::pair<int, int>;
 
 int manhattan(const Coord& a, const Coord& b)
 {
-    const int dx = a.first > b.first ? a.first - b.first : b.first - a.first;
-    const int dy = a.second > b.second ? a.second - b.second : b.second - a.second;
-    return dx + dy;
+    return std::abs(a.first - b.first) + std::abs(a.second - b.second);
 }
 
 struct OpenNode {
@@ -94,13 +94,8 @@ std::vector<TileCoordinate> Pathfinder::findPath(const RoadNetwork& roadNetwork,
             }
             path.push_back(start);
 
-            std::vector<TileCoordinate> ordered;
-            ordered.reserve(path.size());
-            for (auto it = path.rbegin(); it != path.rend(); ++it)
-            {
-                ordered.push_back(*it);
-            }
-            return ordered;
+            std::reverse(path.begin(), path.end());
+            return path;
         }
 
         for (int i = 0; i < 4; ++i)

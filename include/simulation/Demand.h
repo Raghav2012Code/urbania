@@ -30,7 +30,6 @@ class Demand {
 public:
     static constexpr int MIN_DEMAND = -100;
     static constexpr int MAX_DEMAND = 100;
-    static constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
 
     Demand();
 
@@ -40,7 +39,7 @@ public:
     int getDemand(DemandType type) const;
 
     // Hourly accumulator round-trip (SaveSystem). Clamped to
-    // [0, SIM_SECONDS_PER_HOUR) on restore.
+    // [0, kSimSecondsPerHour) on restore.
     float getSecondsTowardNextHour() const;
     void restoreSavedState(float secondsToward_);
 

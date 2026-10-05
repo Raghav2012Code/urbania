@@ -29,10 +29,8 @@ public:
 
     // Get texture by key (returns fallback texture if not found)
     const Texture2D* getTexture(const std::string& name) const;
-    bool hasTexture(const std::string& name) const;
 
 private:
-    void loadOrGenerateTextures();
     void generateProceduralFallbacks();
 
     // Helpers to create and register procedural textures from Image

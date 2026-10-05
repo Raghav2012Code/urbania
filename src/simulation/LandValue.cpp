@@ -23,9 +23,9 @@ void LandValue::update(const World& world, const Pollution& pollution,
     }
 
     secondsTowardNextHour += simulationDeltaTime;
-    while (secondsTowardNextHour >= SIM_SECONDS_PER_HOUR)
+    while (secondsTowardNextHour >= urbania::kSimSecondsPerHour)
     {
-        secondsTowardNextHour -= SIM_SECONDS_PER_HOUR;
+        secondsTowardNextHour -= urbania::kSimSecondsPerHour;
         recalculate(world, pollution, congestion);
     }
 }
@@ -115,23 +115,7 @@ float LandValue::calculateTileLandValue(int x, int y, const World& world,
 
 bool LandValue::hasNearbyPark(int tileX, int tileY, const World& world) const
 {
-    const int minX = std::max(0, tileX - PARK_VALUE_RADIUS);
-    const int maxX = std::min(world.getWidth() - 1, tileX + PARK_VALUE_RADIUS);
-    const int minY = std::max(0, tileY - PARK_VALUE_RADIUS);
-    const int maxY = std::min(world.getHeight() - 1, tileY + PARK_VALUE_RADIUS);
-
-    for (int y = minY; y <= maxY; ++y)
-    {
-        for (int x = minX; x <= maxX; ++x)
-        {
-            if (world.getTile(x, y).type == TileType::Park)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return world.hasParkNearby(tileX, tileY, PARK_VALUE_RADIUS);
 }
 
 float LandValue::getNearbyCongestion(int tileX, int tileY, const World& world,
@@ -170,7 +154,7 @@ void LandValue::restoreSavedState(float secondsToward_)
 {
     secondsTowardNextHour = secondsToward_ < 0.0f
         ? 0.0f
-        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+        : (secondsToward_ >= urbania::kSimSecondsPerHour ? 0.0f : secondsToward_);
 }
 
 }  // namespace urbania

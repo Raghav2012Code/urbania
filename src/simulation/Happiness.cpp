@@ -26,9 +26,9 @@ void Happiness::update(const World& world, CitizenManager& citizens, const Pollu
     }
 
     secondsTowardNextHour += simulationDeltaTime;
-    while (secondsTowardNextHour >= SIM_SECONDS_PER_HOUR)
+    while (secondsTowardNextHour >= urbania::kSimSecondsPerHour)
     {
-        secondsTowardNextHour -= SIM_SECONDS_PER_HOUR;
+        secondsTowardNextHour -= urbania::kSimSecondsPerHour;
         recalculate(world, citizens, pollution, utilities);
     }
 }
@@ -139,23 +139,7 @@ float Happiness::calculateCitizenHappiness(const Citizen& citizen, const World& 
 
 bool Happiness::hasNearbyPark(int homeX, int homeY, const World& world) const
 {
-    const int minX = std::max(0, homeX - PARK_HAPPINESS_RADIUS);
-    const int maxX = std::min(world.getWidth() - 1, homeX + PARK_HAPPINESS_RADIUS);
-    const int minY = std::max(0, homeY - PARK_HAPPINESS_RADIUS);
-    const int maxY = std::min(world.getHeight() - 1, homeY + PARK_HAPPINESS_RADIUS);
-
-    for (int y = minY; y <= maxY; ++y)
-    {
-        for (int x = minX; x <= maxX; ++x)
-        {
-            if (world.getTile(x, y).type == TileType::Park)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return world.hasParkNearby(homeX, homeY, PARK_HAPPINESS_RADIUS);
 }
 
 float Happiness::getSecondsTowardNextHour() const
@@ -167,7 +151,7 @@ void Happiness::restoreSavedState(float secondsToward_)
 {
     secondsTowardNextHour = secondsToward_ < 0.0f
         ? 0.0f
-        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+        : (secondsToward_ >= urbania::kSimSecondsPerHour ? 0.0f : secondsToward_);
 }
 
 }  // namespace urbania

@@ -5,12 +5,6 @@
 #include "world/Tile.h"
 #include "world/World.h"
 
-namespace {
-
-constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
-
-}  // namespace
-
 void Population::update(World& world, float simulationDeltaTime)
 {
     syncWithWorld(world);
@@ -50,7 +44,7 @@ void Population::update(World& world, float simulationDeltaTime)
             const std::size_t index = static_cast<std::size_t>(homeY) * gridWidth + homeX;
 
             home.growthProgress +=
-                simulationDeltaTime / SIM_SECONDS_PER_HOUR * RESIDENTS_PER_SIM_HOUR;
+                simulationDeltaTime / urbania::kSimSecondsPerHour * RESIDENTS_PER_SIM_HOUR;
 
             while (home.growthProgress >= 1.0f &&
                    residentCounts[index] < home.capacity)

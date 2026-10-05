@@ -122,11 +122,6 @@ Vector2 Camera::screenToWorld(Vector2 screenPosition) const
     return GetScreenToWorld2D(screenPosition, camera);
 }
 
-Vector2 Camera::worldToScreen(Vector2 worldPosition) const
-{
-    return GetWorldToScreen2D(worldPosition, camera);
-}
-
 void Camera::clampToWorldBounds()
 {
     // Visible half-extents in world coordinates shrink as zoom grows,

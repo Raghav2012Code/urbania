@@ -29,7 +29,6 @@ public:
     static constexpr int MAX_HOUSING_PRESSURE = 100;
     static constexpr float MIN_RESIDENTIAL_VALUE = 0.0f;
     static constexpr float MAX_RESIDENTIAL_VALUE = 100.0f;
-    static constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
 
     Housing();
 
@@ -50,7 +49,7 @@ public:
     const std::map<TileCoordinate, float>& getResidentialGrid() const;
 
     // Hourly accumulator round-trip (SaveSystem). Clamped to
-    // [0, SIM_SECONDS_PER_HOUR) on restore.
+    // [0, kSimSecondsPerHour) on restore.
     float getSecondsTowardNextHour() const;
     void restoreSavedState(float secondsToward_);
 

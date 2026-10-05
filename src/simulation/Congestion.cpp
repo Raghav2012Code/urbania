@@ -1,5 +1,7 @@
 #include "simulation/Congestion.h"
 
+#include <algorithm>
+
 #include "simulation/Traffic.h"
 #include "simulation/Vehicle.h"
 
@@ -88,7 +90,7 @@ float Congestion::speedMultiplier(float congestion)
     if (congestion <= 1.0f)
     {
         const float multiplier = 1.0f - congestion * 0.4f;
-        return multiplier < 0.0f ? 0.0f : multiplier;
+        return std::clamp(multiplier, 0.0f, 1.0f);
     }
     return 0.6f / congestion;
 }

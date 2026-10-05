@@ -30,8 +30,6 @@ public:
     static constexpr float NATURAL_POLLUTION_DECAY_PER_HOUR = 1.0f;
     static constexpr float DIFFUSION_RATE = 0.10f;
 
-    static constexpr float SIM_SECONDS_PER_HOUR = 3600.0f;
-
     Pollution();
 
     // Advances the pollution timer on simulation time. Call once per frame

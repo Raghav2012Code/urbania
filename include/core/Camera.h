@@ -13,7 +13,6 @@ public:
     void end();
 
     Vector2 screenToWorld(Vector2 screenPosition) const;
-    Vector2 worldToScreen(Vector2 worldPosition) const;
 
     Vector2 getTarget() const;
     float getZoom() const;

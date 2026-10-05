@@ -24,9 +24,9 @@ void Housing::update(const World& world, const Population& population,
     }
 
     secondsTowardNextHour += simulationDeltaTime;
-    while (secondsTowardNextHour >= SIM_SECONDS_PER_HOUR)
+    while (secondsTowardNextHour >= urbania::kSimSecondsPerHour)
     {
-        secondsTowardNextHour -= SIM_SECONDS_PER_HOUR;
+        secondsTowardNextHour -= urbania::kSimSecondsPerHour;
         recalculate(world, population, landValue);
     }
 }
@@ -135,7 +135,7 @@ void Housing::restoreSavedState(float secondsToward_)
 {
     secondsTowardNextHour = secondsToward_ < 0.0f
         ? 0.0f
-        : (secondsToward_ >= SIM_SECONDS_PER_HOUR ? 0.0f : secondsToward_);
+        : (secondsToward_ >= urbania::kSimSecondsPerHour ? 0.0f : secondsToward_);
 }
 
 }  // namespace urbania

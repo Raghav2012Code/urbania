@@ -19,6 +19,10 @@ public:
     Tile& getTile(int x, int y);
     const Tile& getTile(int x, int y) const;
 
+    // Shared park-proximity scan (Happiness + LandValue). True if any
+    // Park tile exists within the square radius around (x, y).
+    bool hasParkNearby(int x, int y, int radius) const;
+
     // Full-grid snapshot/restore used to make SaveSystem load transactional.
     // Restore is a noexcept vector move so it cannot throw mid-recovery.
     std::vector<Tile> snapshotTiles() const;
