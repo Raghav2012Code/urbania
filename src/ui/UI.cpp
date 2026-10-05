@@ -250,10 +250,24 @@ void UI::update(SimulationClock& clock, TileType& selectedBuildType,
         }
     }
 
-    // 4. SelfTest Modal bounds
+    // 4. SelfTest Modal bounds (fullscreen overlay: blocks world clicks).
+    // Close lives here, not in draw(), because draw() only receives the
+    // flag by value and can never propagate the close back to Game.
     if (showSelfTestModal)
     {
         mouseOverUI = true;
+        const int mw = 520;
+        const int mh = 540;
+        const int mx = (sw - mw) / 2;
+        const int my = (sh - mh) / 2;
+        const bool closeKey = IsKeyPressed(KEY_ESCAPE);
+        const bool closeClick =
+            IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && m.y >= my + mh - 44 &&
+            m.y <= my + mh - 14 && m.x >= mx + mw / 2 - 60 && m.x <= mx + mw / 2 + 60;
+        if (closeKey || closeClick)
+        {
+            showSelfTestModal = false;
+        }
     }
 }
 
@@ -300,8 +314,7 @@ void UI::draw(const World& world, const Simulation& sim,
 
     if (showSelfTestModal)
     {
-        bool showModal = true;
-        drawSelfTestModal(selfTest, showModal);
+        drawSelfTestModal(selfTest);
     }
 }
 
@@ -482,7 +495,7 @@ void UI::drawDemandMeters(const Simulation& sim)
     const int x = 16;
     const int y = 62;
     const int w = 154;
-    const int h = 170;
+    const int h = 188;
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h) },
                          0.1f, 4, Color{ 14, 18, 28, 235 });
@@ -507,7 +520,7 @@ void UI::drawDemandMeters(const Simulation& sim)
     else DrawRectangle(rX, baseY, colW, rH, Color{ 39, 174, 96, 120 });
     DrawRectangleLines(rX, baseY - maxBarH, colW, maxBarH * 2, Color{ 46, 204, 113, 80 });
     drawTextCentered("R", rX + colW / 2, baseY + maxBarH + 12, 13, Color{ 46, 204, 113, 255 }, true);
-    drawTextCentered(TextFormat("%+d", rDem), rX + colW / 2, (rFrac >= 0 ? baseY - rH - 8 : baseY + rH + 8), 11, Color{ 210, 235, 220, 255 });
+    drawTextCentered(TextFormat("%+d", rDem), rX + colW / 2, (rFrac >= 0 ? baseY - rH - 8 : baseY + maxBarH + 26), 11, Color{ 210, 235, 220, 255 });
 
     // Commercial (C)
     const int cDem = sim.getDemand().getCommercialDemand();
@@ -518,7 +531,7 @@ void UI::drawDemandMeters(const Simulation& sim)
     else DrawRectangle(cX, baseY, colW, cH, Color{ 41, 128, 185, 120 });
     DrawRectangleLines(cX, baseY - maxBarH, colW, maxBarH * 2, Color{ 52, 152, 219, 80 });
     drawTextCentered("C", cX + colW / 2, baseY + maxBarH + 12, 13, Color{ 52, 152, 219, 255 }, true);
-    drawTextCentered(TextFormat("%+d", cDem), cX + colW / 2, (cFrac >= 0 ? baseY - cH - 8 : baseY + cH + 8), 11, Color{ 210, 230, 255, 255 });
+    drawTextCentered(TextFormat("%+d", cDem), cX + colW / 2, (cFrac >= 0 ? baseY - cH - 8 : baseY + maxBarH + 26), 11, Color{ 210, 230, 255, 255 });
 
     // Industrial (I)
     const int iDem = sim.getDemand().getIndustrialDemand();
@@ -529,7 +542,7 @@ void UI::drawDemandMeters(const Simulation& sim)
     else DrawRectangle(iX, baseY, colW, iH, Color{ 211, 84, 0, 120 });
     DrawRectangleLines(iX, baseY - maxBarH, colW, maxBarH * 2, Color{ 230, 126, 34, 80 });
     drawTextCentered("I", iX + colW / 2, baseY + maxBarH + 12, 13, Color{ 230, 126, 34, 255 }, true);
-    drawTextCentered(TextFormat("%+d", iDem), iX + colW / 2, (iFrac >= 0 ? baseY - iH - 8 : baseY + iH + 8), 11, Color{ 255, 230, 210, 255 });
+    drawTextCentered(TextFormat("%+d", iDem), iX + colW / 2, (iFrac >= 0 ? baseY - iH - 8 : baseY + maxBarH + 26), 11, Color{ 255, 230, 210, 255 });
 }
 
 void UI::drawBottomDock(const Simulation& sim, TileType selectedBuildType,
@@ -995,7 +1008,7 @@ void UI::drawOverlayLegends(const Simulation& sim, bool pollutionOverlay, bool l
     }
 
     const int x = 16;
-    const int y = 242;
+    const int y = 260;
     const int w = 154;
     const int h = utilitiesOverlay ? 90 : 80;
 
@@ -1098,9 +1111,12 @@ void UI::drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
         }
         else
         {
-            for (size_t i = 0; i < currentRouteStops.size(); ++i)
+            // Long drafts would run past the banner; show the tail only.
+            const size_t start = currentRouteStops.size() > 4 ? currentRouteStops.size() - 3 : 0;
+            seq += (start > 0 ? "... -> " : "");
+            for (size_t i = start; i < currentRouteStops.size(); ++i)
             {
-                if (i > 0) seq += " -> ";
+                if (i > start) seq += " -> ";
                 seq += "Stop #" + std::to_string(currentRouteStops[i]);
             }
             seq += " (" + std::to_string(currentRouteStops.size()) + " total)";
@@ -1163,7 +1179,7 @@ void UI::drawToast(const std::string& msg, float timer, bool hasBanner)
     drawTextCentered(msg.c_str(), x + w / 2, y + h / 2, 14, Color{ 240, 245, 255, 255 }, true);
 }
 
-void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
+void UI::drawSelfTestModal(const SelfTest& selfTest)
 {
     if (!selfTest.hasRun())
     {
@@ -1216,13 +1232,6 @@ void UI::drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal)
 
     DrawRectangleRounded(Rectangle{ static_cast<float>(x + w / 2 - 60), static_cast<float>(y + h - 44), 120, 30 }, 0.3f, 4, Color{ 45, 60, 90, 255 });
     drawTextCentered("Close (ESC)", x + w / 2, y + h - 29, 14, WHITE, true);
-
-    if (IsKeyPressed(KEY_ESCAPE) || (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-                                     GetMousePosition().y >= y + h - 44 && GetMousePosition().y <= y + h - 14 &&
-                                     GetMousePosition().x >= x + w / 2 - 60 && GetMousePosition().x <= x + w / 2 + 60))
-    {
-        showSelfTestModal = false;
-    }
 }
 
 }  // namespace urbania

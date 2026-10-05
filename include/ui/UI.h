@@ -77,7 +77,7 @@ private:
     void drawModeBanners(bool demolishMode, bool busStopMode, bool routeMode,
                          const std::vector<int>& currentRouteStops);
     void drawToast(const std::string& msg, float timer, bool hasBanner);
-    void drawSelfTestModal(const SelfTest& selfTest, bool& showSelfTestModal);
+    void drawSelfTestModal(const SelfTest& selfTest);
 
     DashboardTab currentTab = DashboardTab::Overview;
     bool mouseOverUI = false;
